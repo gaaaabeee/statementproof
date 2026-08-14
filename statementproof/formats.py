@@ -18,7 +18,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from . import boa, checking, credit
+from . import boa, checking, credit, wellsfargo
 from .text import pages
 
 # How a balance on this kind of account affects net worth. Cash up is good;
@@ -73,6 +73,19 @@ FORMATS: list = [
         markers=["Account summary", "Beginning balance on", "Ending balance on",
                  "Customer service: 1.800.432.1000"],
         parse=boa.parse,
+    ),
+    # Experimental -- built from Wells Fargo's own official specimen statement,
+    # which is dated 2002. See wellsfargo.py's module docstring: this may or
+    # may not detect a current statement, and that's an honest "unsupported"
+    # rather than a wrong number either way.
+    Format(
+        name="wellsfargo_checking",
+        label="Wells Fargo personal checking (experimental)",
+        account_kind="checking",
+        polarity=ASSET,
+        required=["WELLS FARGO BANK, N.A.", "1-800-TO-WELLS"],
+        markers=["Activity summary", "Activity detail", "Daily balance summary"],
+        parse=wellsfargo.parse,
     ),
 ]
 

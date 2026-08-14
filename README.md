@@ -116,11 +116,22 @@ and nothing here is written until you review it and hit **Save all**.
 | Chase | Total Checking | 20 statements, 2024–2026 |
 | Chase | Sapphire-family credit card | 20 statements, 2024–2026 |
 | Bank of America | Adv Plus Banking (checking) | 6 statements, 2026 |
+| Wells Fargo | Personal checking — **experimental** | 1 official specimen statement, dated 2002 |
 
-Both banks issue many other products, and have used other layouts historically.
-Those may or may not parse — but an unsupported layout **fails loudly rather
-than producing plausible-looking wrong numbers**, which is the entire point. If
-your statements don't parse, that's a bug worth reporting.
+Wells Fargo is a different kind of entry: it's built from the bank's own
+[official specimen statement](https://www.wellsfargo.com/assets/pdf/personal/help/tester.pdf)
+rather than a real account, and that specimen predates this project by two
+decades. The parser fully reconciles against it — every check passes — but
+that only proves the *logic* is sound against a statement of that vintage, not
+that a current Wells Fargo statement looks the same. If it doesn't detect
+yours, that's an expected gap, not a bug — please still report it (see
+`CONTRIBUTING.md`), since that's exactly what turns "experimental" into
+verified.
+
+These banks issue many other products, and have used other layouts
+historically. Those may or may not parse — but an unsupported layout **fails
+loudly rather than producing plausible-looking wrong numbers**, which is the
+entire point. If your statements don't parse, that's a bug worth reporting.
 
 Any number of accounts is supported: statements are grouped per account, each
 checked independently for gaps and balance continuity.

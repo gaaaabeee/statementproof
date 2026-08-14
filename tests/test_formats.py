@@ -52,8 +52,23 @@ Beginning balance on June 16, 2026 $1,000.00
 Ending balance on July 17, 2026 $1,500.00
 """
 
+WELLSFARGO_TEXT = """
+Account Statement
+Statement Date: May 3, 2002
+SAMPLE
+Questions about this statement or your accounts? Call: 800-869-3557
+(1-800-TO-WELLS). Or write: WELLS FARGO BANK, N.A., P.O. BOX 6995, PORTLAND,
+OR 97228-6995.
+Advantage Checking
+Account Number: 111-2222222
+Activity summary
+Balance on 04/03 $4,721.33
+Activity detail
+Daily balance summary
+"""
+
 OTHER_BANK_TEXT = """
-Wells Fargo Everyday Checking
+Citibank Basic Checking
 Statement period January 1, 2025 - January 31, 2025
 Beginning balance $500.00
 """
@@ -67,13 +82,14 @@ class TestScoring(unittest.TestCase):
         self.assertGreater(self.fmt("chase_checking").score(CHECKING_TEXT), 0)
         self.assertGreater(self.fmt("chase_credit").score(CREDIT_TEXT), 0)
         self.assertGreater(self.fmt("boa_checking").score(BOA_TEXT), 0)
+        self.assertGreater(self.fmt("wellsfargo_checking").score(WELLSFARGO_TEXT), 0)
 
     def test_formats_reject_each_other(self):
         # The failure that matters: one bank's parser run over another's
         # statement would emit plausible, wrong numbers. Two checking formats
         # from different banks is the case most likely to collide.
         texts = {"chase_checking": CHECKING_TEXT, "chase_credit": CREDIT_TEXT,
-                 "boa_checking": BOA_TEXT}
+                 "boa_checking": BOA_TEXT, "wellsfargo_checking": WELLSFARGO_TEXT}
         for name, text in texts.items():
             for other, _ in texts.items():
                 if other == name:
