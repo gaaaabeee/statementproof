@@ -152,6 +152,27 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(self.n("06/12 Online Domestic Wire Fee", "checking", "withdrawal")[1],
                          "Fees & Interest")
 
+    def test_brand_punctuation_variants_all_match(self):
+        # Walmart was missed for a hyphen: the rule said WALMART and the
+        # statement said WAL-MART. Punctuation variants are the cheapest way to
+        # lose a national brand, so they are pinned here.
+        for desc in ("WAL-MART #0915 STAFFORD TX", "WALMART SUPERCENTER HOUSTON TX",
+                     "WM SUPERCENTER #123 HOUSTON TX"):
+            self.assertEqual(self.n(desc, "checking", "withdrawal")[0], "Walmart", desc)
+
+    def test_national_chains_are_recognised(self):
+        cases = [
+            ("WENDY'S DIGITAL DUBLIN OH", "Dining & Delivery"),
+            ("DOMINO'S 6684 HOUSTON TX", "Dining & Delivery"),
+            ("RAISING CANES 0223 HOUSTON TX", "Dining & Delivery"),
+            ("COSTCO WHSE #1018 HOUSTON TX", "Groceries"),
+            ("BASS PRO SPRIN HOUSTON TX", "Shopping"),
+            ("SOUTHWES 8004359792 TX", "Travel"),
+            ("TX DPS DL OFFICE AUSTIN TX", "Government & Taxes"),
+        ]
+        for desc, expected in cases:
+            self.assertEqual(self.n(desc, "checking", "withdrawal")[1], expected, desc)
+
     def test_unknown_merchant_is_left_uncategorized_not_guessed(self):
         merchant, category = self.n("UNKNOWN VENDOR LLC SOMETOWN TX")
         self.assertEqual(category, "uncategorized")

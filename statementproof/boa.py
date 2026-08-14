@@ -122,8 +122,10 @@ BOA_DOUBLED = re.compile(
     r"(?P<second>\S.*)$",
     re.I,
 )
-# A leading street number means the second copy is an address, not a name.
-BOA_STREET = re.compile(r"^\d{2,6}\s+\S")
+# A second copy starting with a digit is an address or a store code rather
+# than a name ("7810 KATY FREEWAY", "02988--4715 Westh"), so the first copy --
+# which carries the brand -- is the better one.
+BOA_STREET = re.compile(r"^\d")
 BOA_CHANNEL = re.compile(
     r"^(?:RECURRING\s+)?(?:CHECKCARD|CHECK CARD|PURCHASE|MOBILE PURCHASE|"
     r"ATM WITHDRAWAL|ATM CASH WITHDRAWAL|WITHDRWL|PRE-AUTH|POS)\s+\d{4}\s+",

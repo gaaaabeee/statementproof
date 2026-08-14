@@ -15,7 +15,7 @@ python -m statementproof.run --report         # validate only, write nothing
 python -m statementproof.run --strict         # non-zero exit if anything fails
 python -m statementproof.run --uncategorized  # merchants that need a rule
 python -m statementproof.dashboard            # build out/dashboard.html
-python -m unittest discover -s tests                # 62 tests
+python -m unittest discover -s tests                # 64 tests
 ```
 
 Requires Python 3.9+ and one dependency, `pypdf`.
