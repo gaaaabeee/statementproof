@@ -24,6 +24,11 @@ __pycache__/
 build/
 dist/
 
+# Agent skills are personal tooling, not part of this project.
+.agents/
+.claude/skills/
+skills-lock.json
+
 # Editor and OS noise
 .DS_Store
 .idea/
