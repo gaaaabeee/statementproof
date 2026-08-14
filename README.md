@@ -75,7 +75,8 @@ python -m statementproof.run --strict         # non-zero exit if anything fails
 python -m statementproof.run --uncategorized  # merchants that need a rule
 python -m statementproof.run --out DIR        # write the tables somewhere else
 python -m statementproof.dashboard            # build out/dashboard.html
-python -m unittest discover -s tests          # 100 tests
+python -m statementproof.eval -v              # score categorization against a labeled set
+python -m unittest discover -s tests          # 109 tests
 ```
 
 `pip install .` also puts `statementproof`, `statementproof-app` and

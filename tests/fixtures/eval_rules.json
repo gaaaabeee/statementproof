@@ -1,0 +1,9 @@
+{
+  "_comment": [
+    "Eval fixture only. Deliberately empty: the harness measures the shipped",
+    "ruleset in isolation from any developer's personal rules."
+  ],
+  "payees": {},
+  "ach": {},
+  "merchants": []
+}

@@ -1,0 +1,74 @@
+# Eval fixture: invented descriptors, no real people/merchants/accounts.
+# expected_* was computed against the shipped ruleset (tests/fixtures/eval_rules.json)
+# and hand-reviewed, not guessed -- see statementproof/eval.py.
+{"description": "H-E-B #0000 SOMETOWN TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "H-E-B", "expected_category": "Groceries"}
+{"description": "SHELL OIL 00000000000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Shell", "expected_category": "Gas & Fuel"}
+{"description": "STARBUCKS STORE 00000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Starbucks", "expected_category": "Dining & Delivery"}
+{"description": "NETFLIX.COM NETFLIX.COM CA", "account": "credit", "kind": "purchase", "expected_merchant": "Netflix", "expected_category": "Subscriptions"}
+{"description": "PLAYSTATION NETWORK 000-000-0000 CA", "account": "credit", "kind": "purchase", "expected_merchant": "PlayStation", "expected_category": "Entertainment"}
+{"description": "COMCAST CABLE COMM 800-000-0000 PA", "account": "checking", "kind": "withdrawal", "expected_merchant": "Comcast / Xfinity", "expected_category": "Utilities"}
+{"description": "PROGRESSIVE INS 000-000-0000 OH", "account": "checking", "kind": "withdrawal", "expected_merchant": "Progressive (insurance)", "expected_category": "Insurance"}
+{"description": "AUTOZONE #0000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Auto parts & service", "expected_category": "Auto"}
+{"description": "MARRIOTT SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Lodging", "expected_category": "Travel"}
+{"description": "AMAZON MKTPL*AA0AA0AA0 Amzn.com/bill WA", "account": "credit", "kind": "purchase", "expected_merchant": "Amazon", "expected_category": "Shopping"}
+{"description": "WAL-MART #0915 STAFFORD TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Walmart", "expected_category": "Shopping"}
+{"description": "TX DPS DL OFFICE AUSTIN TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Texas state services", "expected_category": "Government & Taxes"}
+{"description": "DOORDASH*EXAMPLE SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "DoorDash", "expected_category": "Dining & Delivery"}
+{"description": "LYFT *RIDE WED 11PM LYFT.COM CA", "account": "credit", "kind": "purchase", "expected_merchant": "Lyft", "expected_category": "Transport"}
+{"description": "COSTCO WHSE #1018 HOUSTON TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Costco", "expected_category": "Groceries"}
+{"description": "CHICK-FIL-A #00000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Chick-fil-A", "expected_category": "Dining & Delivery"}
+{"description": "CVS/PHARMACY #00000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "CVS", "expected_category": "Health & Pharmacy"}
+{"description": "SPOTIFY USA 000-000-0000 NY", "account": "credit", "kind": "purchase", "expected_merchant": "Spotify", "expected_category": "Subscriptions"}
+{"description": "FANDUEL.COM 000-000-0000 NJ", "account": "credit", "kind": "purchase", "expected_merchant": "Sportsbook", "expected_category": "Gambling"}
+{"description": "TOPGOLF SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Golf", "expected_category": "Recreation & Sports"}
+{"description": "PLANET FITNESS #0000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Gym & fitness", "expected_category": "Recreation & Sports"}
+{"description": "GEICO *AUTO 800-000-0000 VA", "account": "checking", "kind": "withdrawal", "expected_merchant": "Insurance", "expected_category": "Insurance"}
+{"description": "SAFELITE AUTOGLASS 800-000-0000 OH", "account": "credit", "kind": "purchase", "expected_merchant": "Safelite", "expected_category": "Auto"}
+{"description": "AT&T*BILL PAYMENT 800-000-0000 TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Phone", "expected_category": "Utilities"}
+{"description": "UPS STORE 0000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Shipping", "expected_category": "Shopping"}
+{"description": "HOME DEPOT #0000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Home improvement", "expected_category": "Shopping"}
+{"description": "PETSMART #0000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Pet supplies", "expected_category": "Shopping"}
+{"description": "GREAT CLIPS #0000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Barber", "expected_category": "Personal Care"}
+{"description": "WHOLEFDS SOM 00000 SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Whole Foods", "expected_category": "Groceries"}
+{"description": "INSTACART*EXAMPLE 000-000-0000 CA", "account": "credit", "kind": "purchase", "expected_merchant": "Instacart", "expected_category": "Groceries"}
+{"description": "TICKETMASTER0000000 000-000-0000 CA", "account": "credit", "kind": "purchase", "expected_merchant": "Ticketing", "expected_category": "Entertainment"}
+{"description": "WALMART SUPERCENTER HOUSTON TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Walmart", "expected_category": "Shopping"}
+{"description": "WM SUPERCENTER #123 HOUSTON TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Walmart", "expected_category": "Shopping"}
+{"description": "WENDY'S 00000 DUBLIN OH", "account": "credit", "kind": "purchase", "expected_merchant": "Wendy's", "expected_category": "Dining & Delivery"}
+{"description": "WENDYS 00000 DUBLIN OH", "account": "credit", "kind": "purchase", "expected_merchant": "Wendy's", "expected_category": "Dining & Delivery"}
+{"description": "TST*OFF THE RECORD SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "OFF THE Record", "expected_category": "Dining & Delivery"}
+{"description": "TST* THE CORNER DINER SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "THE Corner Diner", "expected_category": "Dining & Delivery"}
+{"description": "SP EXAMPLESHOP.NE EXAMPLESHOP NY", "account": "credit", "kind": "purchase", "expected_merchant": "SP", "expected_category": "Shopping"}
+{"description": "SP * ANOTHER SHOP SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Another Shop", "expected_category": "Shopping"}
+{"description": "GAZEBO CAFE SOMETOWN LA", "account": "credit", "kind": "purchase", "expected_merchant": "Gazebo Cafe", "expected_category": "Dining & Delivery"}
+{"description": "CORNER BAKERY SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Corner Bakery", "expected_category": "Dining & Delivery"}
+{"description": "KOMODO PUB TX", "account": "credit", "kind": "purchase", "expected_merchant": "Komodo PUB", "expected_category": "Dining & Delivery"}
+{"description": "EXAMPLE ICE HOUSE - EA SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Example ICE House", "expected_category": "Dining & Delivery"}
+{"description": "BEST STOP SUPERMARKET LA", "account": "credit", "kind": "purchase", "expected_merchant": "Best Stop Supermarket", "expected_category": "Groceries"}
+{"description": "ACME INS TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Acme INS", "expected_category": "Insurance"}
+{"description": "SOMETOWN PHARMACY SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Medical", "expected_category": "Health & Pharmacy"}
+{"description": "RIVERSIDE TENNIS CLUB TX", "account": "credit", "kind": "purchase", "expected_merchant": "Riverside Tennis", "expected_category": "Recreation & Sports"}
+{"description": "PURCHASE INTEREST CHARGE", "account": "credit", "kind": "interest", "expected_merchant": "Chase card interest", "expected_category": "Fees & Interest"}
+{"description": "LATE FEE", "account": "credit", "kind": "fee", "expected_merchant": "Chase card fee", "expected_category": "Fees & Interest"}
+{"description": "FANDUELSBKPRIMARY 0000000000 NJ", "account": "credit", "kind": "cash_advance", "expected_merchant": "Cash advance", "expected_category": "Cash & ATM"}
+{"description": "Payment Thank You-Mobile", "account": "credit", "kind": "payment", "expected_merchant": "Chase card payment", "expected_category": "Transfers"}
+{"description": "AMAZON MKTPL*AA0AA0AA0 Amzn.com/bill WA", "account": "credit", "kind": "credit", "expected_merchant": "Amazon", "expected_category": "Refunds"}
+{"description": "H-E-B #0000 SOMETOWN TX", "account": "checking", "kind": "credit", "expected_merchant": "H-E-B", "expected_category": "Refunds"}
+{"description": "UNKNOWN VENDOR REFUND LLC SOMETOWN TX", "account": "credit", "kind": "credit", "expected_merchant": "Unknown Vendor Refund LLC", "expected_category": "Refunds"}
+{"description": "Card Purchase 03/05 Example Cafe TX Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "Example Cafe", "expected_category": "Dining & Delivery"}
+{"description": "Recurring Card Purchase 03/05 Netflix.com Netflix.com CA Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "Netflix", "expected_category": "Subscriptions"}
+{"description": "Non-Chase ATM Withdraw 03/05 Some Bank Sometown TX Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "ATM withdrawal", "expected_category": "Cash & ATM"}
+{"description": "Zelle Payment To Alex Jpm99Xx0000A", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Alex", "expected_category": "People & Services"}
+{"description": "Zelle Payment To Casey Jpm99Xx0000C", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Casey", "expected_category": "People & Services"}
+{"description": "VENMO PAYMENT SOME PERSON", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Some Person", "expected_category": "People & Services"}
+{"description": "Zelle Payment From Jordan T Rivera 20000000000", "account": "checking", "kind": "deposit", "expected_merchant": "Zelle received", "expected_category": "Reimbursements"}
+{"description": "Acme Corp Payroll PPD ID: 0000000000", "account": "checking", "kind": "deposit", "expected_merchant": "Payroll", "expected_category": "Income"}
+{"description": "Irs Treas 310 Tax Ref PPD ID: 0000000000", "account": "checking", "kind": "deposit", "expected_merchant": "IRS tax refund", "expected_category": "Income"}
+{"description": "Deposit 0000000000", "account": "checking", "kind": "deposit", "expected_merchant": "Deposit (unattributed)", "expected_category": "One-off deposits"}
+{"description": "06/12 Online Domestic Wire Fee", "account": "checking", "kind": "withdrawal", "expected_merchant": "Wire fee", "expected_category": "Fees & Interest"}
+{"description": "QUANTUM WIDGET SUPPLY SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Quantum Widget Supply", "expected_category": "uncategorized"}
+{"description": "NORTHSIDE HARDWARE CO SOMETOWN TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Northside Hardware", "expected_category": "uncategorized"}
+{"description": "BLUE HERON CONSULTING LLC SOMETOWN TX", "account": "credit", "kind": "purchase", "expected_merchant": "Blue Heron Consulting LLC", "expected_category": "uncategorized"}
+{"description": "RIVERBEND TRADING POST TX", "account": "credit", "kind": "purchase", "expected_merchant": "Riverbend Trading", "expected_category": "uncategorized"}
+{"description": "APEX SIGNWORKS INC SOMETOWN TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Apex Signworks INC", "expected_category": "uncategorized"}
+{"description": "MERIDIAN DATA SERVICES LAS VEGAS NV", "account": "credit", "kind": "purchase", "expected_merchant": "Meridian Data Services", "expected_category": "uncategorized"}
