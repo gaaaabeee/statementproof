@@ -118,6 +118,11 @@ def find_recurring(spend: list[dict], corpus_end: str) -> list[dict]:
             "monthly": round(statistics.median(amounts) * per_month, 2),
             "first": rows[0]["date"],
             "last": rows[-1]["date"],
+            # For price-drift detection: the earliest and most recent charge,
+            # not the median -- a subscription that went from $9.99 to $12.99
+            # should say so exactly, not blend the two into "typical".
+            "first_amount": round(amounts[0], 2),
+            "last_amount": round(amounts[-1], 2),
             "variable": cv > 0.15,
             "active": stale_days <= gap * 2.5,
             "missed": int(stale_days // gap) if stale_days > gap * 2.5 else 0,
@@ -370,6 +375,15 @@ TEMPLATE = r"""<!doctype html>
 
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 28px; }
   .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+
+  .insights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .insights li { display: flex; gap: 10px; align-items: baseline; font-size: 13.5px; line-height: 1.5; }
+  .insights .mark { flex: none; width: 18px; font-weight: 700; text-align: center; }
+  .insights .mark.up { color: var(--critical); }
+  .insights .mark.down { color: var(--good); }
+  .insights .mark.warn { color: var(--warn); }
+  .insights .mark.neutral { color: var(--muted); }
+  .insights b { font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
   .tile .label { font-size: 13px; color: var(--text-secondary); }
   .tile .value { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-top: 6px; }
   .tile .delta { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
@@ -449,6 +463,13 @@ TEMPLATE = r"""<!doctype html>
   </div>
 
   <div class="tiles" id="tiles"></div>
+
+  <div class="card" id="insightsCard" style="display:none">
+    <h2>Insights</h2>
+    <p class="note">Computed directly from the reconciled rows above — nothing here is inferred
+       or estimated beyond what the numbers themselves show.</p>
+    <ul class="insights" id="insights"></ul>
+  </div>
 
   <div class="card">
     <h2>Money in vs money out</h2>
@@ -574,6 +595,140 @@ function monthsInRange() {
   if (range === "all") return all;
   if (/^\d{4}$/.test(range)) return all.filter(m => m.startsWith(range));
   return all.slice(-parseInt(range, 10));
+}
+
+/* ---------- insights: findings computed from data already on screen ------- */
+// Every number here is a re-aggregation of rows already reconciled and
+// rendered elsewhere on the page -- nothing is estimated, inferred, or fetched.
+// An insight with nothing to say is simply omitted rather than padded out.
+
+// The window of months immediately before the selected range, same length --
+// null when there isn't enough history before it to compare against (e.g. the
+// selection already starts at the first month of data).
+function priorWindow(months) {
+  if (!months.length) return null;
+  const all = DATA.months;
+  const startIdx = all.indexOf(months[0]);
+  const len = months.length;
+  if (startIdx < len) return null;
+  return all.slice(startIdx - len, startIdx);
+}
+
+function spendTotal(months) {
+  return DATA.txns.filter(t => months.includes(t.d.slice(0, 7)) && isSpendRow(t))
+    .reduce((a, t) => a + -t.a, 0);
+}
+
+function computeInsights() {
+  const months = monthsInRange();
+  if (!months.length) return [];
+  const spend = periodSpend();
+  const total = spendTotal(months);
+  const prior = priorWindow(months);
+  const out = [];
+
+  // Period-over-period total, only when there's a real prior window to hold
+  // it against -- comparing against nothing would be a guess, not a finding.
+  if (prior && prior.length) {
+    const priorTotal = spendTotal(prior);
+    if (priorTotal > 0) {
+      const pct = (total - priorTotal) / priorTotal * 100;
+      if (Math.abs(pct) >= 3) {
+        out.push({
+          tone: pct > 0 ? "up" : "down",
+          weight: Math.abs(total - priorTotal),
+          html: `Spending was <b>${money(total)}</b>, ${pct > 0 ? "up" : "down"} `
+              + `<b>${Math.abs(pct).toFixed(0)}%</b> from the prior `
+              + `${prior.length === 1 ? "month" : prior.length + " months"} (${money(priorTotal)}).`,
+        });
+      }
+    }
+
+    // The category that moved the most dollars, either direction.
+    const curByCat = {}, priorByCat = {};
+    spend.forEach(t => { curByCat[t.c] = (curByCat[t.c] || 0) + -t.a; });
+    DATA.txns.filter(t => prior.includes(t.d.slice(0, 7)) && isSpendRow(t))
+      .forEach(t => { priorByCat[t.c] = (priorByCat[t.c] || 0) + -t.a; });
+    let biggest = null;
+    new Set([...Object.keys(curByCat), ...Object.keys(priorByCat)]).forEach(c => {
+      const cur = curByCat[c] || 0, prev = priorByCat[c] || 0;
+      const delta = cur - prev;
+      if (prev >= 20 && Math.abs(delta) >= 20 && (!biggest || Math.abs(delta) > Math.abs(biggest.delta))) {
+        biggest = { cat: c, prev, delta };
+      }
+    });
+    if (biggest) {
+      const pct = Math.abs(biggest.delta) / biggest.prev * 100;
+      out.push({
+        tone: biggest.delta > 0 ? "up" : "down",
+        weight: Math.abs(biggest.delta),
+        html: `<b>${biggest.cat}</b> moved the most: ${biggest.delta > 0 ? "up" : "down"} `
+            + `<b>${money(Math.abs(biggest.delta))}</b> (${pct.toFixed(0)}%) from the prior period.`,
+      });
+    }
+  }
+
+  // The single largest transaction in the period -- always computable, no
+  // comparison needed.
+  if (spend.length) {
+    const top = spend.reduce((a, b) => (-b.a > -a.a ? b : a));
+    out.push({
+      tone: "neutral", weight: -top.a * 0.5,
+      html: `The largest single transaction was <b>${money(-top.a)}</b> at `
+          + `<b>${top.m}</b> on ${top.d}.`,
+    });
+  }
+
+  // Recurring charges whose amount has drifted up since the first charge seen
+  // -- gated on the existing cadence detector, so this only fires for things
+  // already proven to be a bill, not a coincidence of two similar amounts.
+  DATA.recurring.filter(r => r.active && r.first_amount > 0).forEach(r => {
+    const pct = (r.last_amount - r.first_amount) / r.first_amount * 100;
+    if (pct >= 8) {
+      out.push({
+        tone: "up", weight: (r.last_amount - r.first_amount) * 12,
+        html: `<b>${r.merchant}</b> went from ${money2(r.first_amount)} to `
+            + `<b>${money2(r.last_amount)}</b> (+${pct.toFixed(0)}%) since it started.`,
+      });
+    }
+  });
+
+  // Uncategorized spend, only above a threshold worth mentioning.
+  const uncat = spend.filter(t => t.c === "uncategorized").reduce((a, t) => a + -t.a, 0);
+  if (total > 0 && uncat >= 20 && uncat / total >= 0.01) {
+    out.push({
+      tone: "warn", weight: uncat,
+      html: `<b>${money(uncat)}</b> (${(uncat / total * 100).toFixed(1)}%) of this period's spend is `
+          + `still uncategorized.`,
+    });
+  }
+
+  // Consecutive months of negative cash flow within the period.
+  const flow = DATA.cashflow.filter(r => months.includes(r.month));
+  let streak = 0, maxStreak = 0;
+  flow.forEach(r => {
+    if (r.in - r.out < 0) { streak++; maxStreak = Math.max(maxStreak, streak); }
+    else streak = 0;
+  });
+  if (maxStreak >= 2) {
+    out.push({
+      tone: "warn", weight: maxStreak * 100,
+      html: `<b>${maxStreak}</b> consecutive months spent more than they took in during this period.`,
+    });
+  }
+
+  return out.sort((a, b) => b.weight - a.weight).slice(0, 6);
+}
+
+function drawInsights() {
+  const items = computeInsights();
+  const card = $("#insightsCard");
+  if (!items.length) { card.style.display = "none"; return; }
+  card.style.display = "";
+  const MARK = { up: "▲", down: "▼", warn: "!", neutral: "•" };
+  $("#insights").innerHTML = items.map(it =>
+    `<li><span class="mark ${it.tone}">${MARK[it.tone]}</span><span>${it.html}</span></li>`
+  ).join("");
 }
 
 /* ---------- tooltip ---------- */
@@ -1099,6 +1254,7 @@ function drawTxns() {
 /* ---------- wiring ---------- */
 function renderAll() {
   drawHeadline();
+  drawInsights();
   drawFlow();
   drawStack();
   drawBalance();

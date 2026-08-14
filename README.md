@@ -159,8 +159,12 @@ The dashboard carries a period filter scoping every chart — presets, or a
 custom date range bounded by the earliest and latest statement you have —
 money in vs money out, monthly spending by category, account balances on one
 axis, interest and fees, category and merchant breakdowns, detected recurring
-charges, and a
-searchable transaction table.
+charges, a searchable transaction table, and an **insights** panel: findings
+re-aggregated from the same reconciled rows, not estimated separately —
+period-over-period spend, the category that moved the most, the largest single
+transaction, price drift on a recurring charge (gated on the same cadence
+detector, so it never fires on a coincidence), and how much of the period is
+still uncategorized.
 
 **Two columns, deliberately.** `amount` is exactly what the statement prints, so
 its meaning depends on the account (a card purchase prints positive). `signed`
