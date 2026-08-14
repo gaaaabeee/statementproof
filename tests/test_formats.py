@@ -39,6 +39,19 @@ Opening/Closing Date 01/03/25 - 02/02/25
 Credit Access Line $9,999
 """
 
+BOA_TEXT = """
+Customer service information
+Customer service: 1.800.432.1000
+En Español: 1.800.688.6086
+bankofamerica.com
+Bank of America, N.A. P.O. Box 25118 Tampa, FL 33622-5118
+Your Adv Plus Banking
+for June 16, 2026 to July 17, 2026 Account number: 0000 0000 0000
+Account summary
+Beginning balance on June 16, 2026 $1,000.00
+Ending balance on July 17, 2026 $1,500.00
+"""
+
 OTHER_BANK_TEXT = """
 Wells Fargo Everyday Checking
 Statement period January 1, 2025 - January 31, 2025
@@ -53,12 +66,20 @@ class TestScoring(unittest.TestCase):
     def test_each_format_recognises_its_own_text(self):
         self.assertGreater(self.fmt("chase_checking").score(CHECKING_TEXT), 0)
         self.assertGreater(self.fmt("chase_credit").score(CREDIT_TEXT), 0)
+        self.assertGreater(self.fmt("boa_checking").score(BOA_TEXT), 0)
 
     def test_formats_reject_each_other(self):
-        # The failure that matters: a card parser run over a checking statement
-        # would emit plausible, wrong numbers.
-        self.assertEqual(self.fmt("chase_credit").score(CHECKING_TEXT), 0)
-        self.assertEqual(self.fmt("chase_checking").score(CREDIT_TEXT), 0)
+        # The failure that matters: one bank's parser run over another's
+        # statement would emit plausible, wrong numbers. Two checking formats
+        # from different banks is the case most likely to collide.
+        texts = {"chase_checking": CHECKING_TEXT, "chase_credit": CREDIT_TEXT,
+                 "boa_checking": BOA_TEXT}
+        for name, text in texts.items():
+            for other, _ in texts.items():
+                if other == name:
+                    continue
+                self.assertEqual(self.fmt(other).score(text), 0,
+                                 f"{other} should not claim {name}'s statement")
 
     def test_unknown_bank_matches_nothing(self):
         for fmt in formats.FORMATS:
@@ -79,9 +100,25 @@ class TestRegistry(unittest.TestCase):
         for fmt in formats.FORMATS:
             self.assertIn(fmt.polarity, (formats.ASSET, formats.LIABILITY), fmt.name)
 
-    def test_account_kinds_are_unique(self):
+    def test_format_names_are_unique(self):
+        names = [f.name for f in formats.FORMATS]
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_several_banks_may_share_an_account_kind(self):
+        # Two banks both offering checking is normal. What must not happen is a
+        # lookup keyed by account kind quietly resolving to one of them.
         kinds = [f.account_kind for f in formats.FORMATS]
-        self.assertEqual(len(kinds), len(set(kinds)))
+        self.assertGreater(len(kinds), len(set(kinds)),
+                           "expected at least two formats sharing an account kind")
+
+    def test_polarity_is_consistent_per_account_kind(self):
+        # A wrong polarity flips the sign of an entire account in the
+        # net-position check while every per-statement check still passes.
+        for fmt in formats.FORMATS:
+            self.assertEqual(formats.ACCOUNT_POLARITY[fmt.account_kind], fmt.polarity,
+                             fmt.name)
+        self.assertEqual(formats.ACCOUNT_POLARITY["checking"], formats.ASSET)
+        self.assertEqual(formats.ACCOUNT_POLARITY["credit"], formats.LIABILITY)
 
     def test_every_format_is_callable_and_named(self):
         for fmt in formats.FORMATS:

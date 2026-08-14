@@ -1,6 +1,6 @@
 # statementproof
 
-Turn Chase statement PDFs into transaction data you can actually trust, then
+Turn bank statement PDFs into transaction data you can actually trust, then
 into a dashboard — entirely on your own machine.
 
 **Reconciled, not scraped.** Every figure is checked against totals the
@@ -15,7 +15,7 @@ python -m statementproof.run --report         # validate only, write nothing
 python -m statementproof.run --strict         # non-zero exit if anything fails
 python -m statementproof.run --uncategorized  # merchants that need a rule
 python -m statementproof.dashboard            # build out/dashboard.html
-python -m unittest discover -s tests                # 28 tests
+python -m unittest discover -s tests                # 44 tests
 ```
 
 Requires Python 3.9+ and one dependency, `pypdf`.
@@ -39,10 +39,17 @@ not recognize is listed as unidentified and skipped, never guessed at.
 
 ## Scope — read this before trying it
 
-Parsers are written and verified against **Chase Total Checking** and
-**Sapphire-family credit card** statements from **2024–2026**. Chase issues many
-other products (Freedom, Amazon, Ink, Premier Plus, College Checking, business
-accounts) and has used other layouts historically. Those may or may not parse.
+Parsers are written and verified against real statements from these products:
+
+| Bank | Product | Verified against |
+|---|---|---|
+| Chase | Total Checking | 20 statements, 2024–2026 |
+| Chase | Sapphire-family credit card | 20 statements, 2024–2026 |
+| Bank of America | Adv Plus Banking (checking) | 6 statements, 2026 |
+
+Both banks issue many other products (Chase Freedom, Amazon, Ink, Premier Plus,
+College Checking; BoA Advantage Savings, credit cards, business accounts) and
+have used other layouts historically. Those may or may not parse.
 
 Because of how validation works, an unsupported layout **fails loudly rather
 than producing plausible-looking wrong numbers** — which is the entire point of
@@ -87,8 +94,8 @@ Parsing a PDF with regexes is only as good as its proof, so nothing is written
 unless every statement reconciles against numbers it prints itself. If any check
 fails the run refuses to write (`--force` overrides).
 
-**Checking** — the statement prints a running balance after every row, which is
-the strongest check available:
+**Chase checking** — the statement prints a running balance after every row,
+which is the strongest check available:
 
 - `running_balance_breaks` — walking each parsed amount forward from the opening
   balance must reproduce every printed balance. A dropped row, a duplicated row,
@@ -96,13 +103,25 @@ the strongest check available:
 - `ending_balance` — opening + net of all rows == printed closing balance.
 - `deposits_total` / `withdrawals_total` — against the page-1 summary buckets.
 
-**Credit** — no running balance, so the page-1 summary does the work:
+**Chase credit** — no running balance, so the page-1 summary does the work:
 
 - `purchases_total`, `payments_total`, `cash_advances_total`, `fees_total`,
   `interest_total` — each printed bucket must equal the rows classified into it.
 - `new_balance` — previous balance + everything parsed == printed new balance.
 - `fees_page_agrees` / `interest_page_agrees` — the activity pages print their
   own subtotals; disagreeing with page 1 means a page went missing.
+
+**Bank of America checking** — no running balance either, and the amounts are
+only separated from their descriptions by column position, so this format is
+read in layout mode and proved against the totals it prints:
+
+- `deposits_total` / `subtractions_total` — each printed section total
+  (`Total ATM and debit card subtractions -$3,474.03`) must equal the rows
+  parsed under that section.
+- `summary_agrees_*` — the page-1 summary must match the section totals it
+  summarizes, so a section skipped entirely cannot pass unnoticed.
+- `ending_balance` — opening + everything parsed == printed closing balance.
+  This is the only check a zero-activity month has, and it still holds.
 
 **Across statements** — `continuity()` checks that each period starts the day
 after the previous ends and that closing balances chain into opening balances —
@@ -254,7 +273,7 @@ the data ends are marked **ended** and excluded from the monthly total.
 **Do not attach your statements to an issue.** They contain your account number,
 balances and every merchant you've paid.
 
-Include instead: the failing check names and deltas from `--report`, your Chase
+Include instead: the failing check names and deltas from `--report`, your bank and
 product name, and the statement period. That is enough to fix nearly every
 layout bug.
 

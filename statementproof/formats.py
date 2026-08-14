@@ -18,7 +18,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from . import checking, credit
+from . import boa, checking, credit
 from .text import pages
 
 # How a balance on this kind of account affects net worth. Cash up is good;
@@ -64,10 +64,40 @@ FORMATS: list = [
                  "ACCOUNT SUMMARY"],
         parse=credit.parse,
     ),
+    Format(
+        name="boa_checking",
+        label="Bank of America personal checking",
+        account_kind="checking",
+        polarity=ASSET,
+        required=["bankofamerica.com", "Bank of America, N.A."],
+        markers=["Account summary", "Beginning balance on", "Ending balance on",
+                 "Customer service: 1.800.432.1000"],
+        parse=boa.parse,
+    ),
 ]
 
 BY_NAME = {f.name: f for f in FORMATS}
-BY_ACCOUNT_KIND = {f.account_kind: f for f in FORMATS}
+
+
+def _account_polarity() -> dict:
+    """Map account kind -> ASSET/LIABILITY, refusing to guess on disagreement.
+
+    Several banks supply the same kind of account, so this cannot be keyed by
+    format. Building it as a dict comprehension over FORMATS would silently keep
+    whichever format was declared last -- and a wrong polarity flips the sign of
+    a whole account in the net-position check without failing anything else.
+    """
+    out = {}
+    for f in FORMATS:
+        if out.setdefault(f.account_kind, f.polarity) != f.polarity:
+            raise ValueError(
+                f"formats disagree on whether {f.account_kind!r} is an asset or a "
+                f"liability; {f.name} conflicts with an earlier format"
+            )
+    return out
+
+
+ACCOUNT_POLARITY = _account_polarity()
 
 
 @dataclass

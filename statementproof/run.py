@@ -100,13 +100,13 @@ def continuity(stmts: list) -> list:
     # duplicated.
     expected, parts, complete = 0.0, [], True
     for key, seq in sorted(groups.items()):
-        fmt = formats.BY_ACCOUNT_KIND.get(key[0])
+        polarity = formats.ACCOUNT_POLARITY.get(key[0])
         open_bal, close_bal = seq[0].opening_balance, seq[-1].closing_balance
-        if fmt is None or open_bal is None or close_bal is None:
+        if polarity is None or open_bal is None or close_bal is None:
             complete = False
             continue
         delta = close_bal - open_bal
-        expected += fmt.polarity * delta
+        expected += polarity * delta
         parts.append(f"{label(key)} {delta:+,.2f}")
 
     if complete and parts:
