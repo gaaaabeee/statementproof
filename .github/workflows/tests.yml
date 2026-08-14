@@ -1,0 +1,60 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+      # The tests must not depend on a developer's personal rules file, and
+      # must not read one if it happens to exist on the runner.
+      - name: Tests are hermetic
+        run: python -m unittest discover -s tests
+        env:
+          HOME: ${{ runner.temp }}
+
+  no-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Guard against the one mistake that cannot be undone once pushed:
+      # committing a statement, a rules file, or generated financial output.
+      - name: No financial data committed
+        run: |
+          set -e
+          bad=$(git ls-files | grep -Ei '\.pdf$|(^|/)out/|(^|/)statements/' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::financial data is tracked by git:"; echo "$bad"; exit 1
+          fi
+          rules=$(git ls-files | grep -E '(^|/)rules\.json$' | grep -v '^tests/fixtures/' || true)
+          if [ -n "$rules" ]; then
+            echo "::error::a personal rules file is tracked:"; echo "$rules"; exit 1
+          fi
+          echo "clean: no statements, no output, no personal rules"

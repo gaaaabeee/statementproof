@@ -1,0 +1,22 @@
+# Financial data — never commit any of this.
+statements/
+out/
+*.pdf
+rules.json
+!tests/fixtures/rules.json
+
+# Environments and build artefacts
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp

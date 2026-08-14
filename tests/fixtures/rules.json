@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "Test fixture only. Invented names and payees -- no real people.",
+    "The suite points STATEMENT_RULES at this file so tests never read,",
+    "and never depend on, whatever the developer has in their own config."
+  ],
+  "payees": {
+    "ALEX":  {"label": "Rent",     "category": "Housing"},
+    "ROBIN": {"label": "Cleaning", "category": "Household"}
+  },
+  "merchants": [
+    {
+      "pattern": "SOME DEALERSHIP",
+      "merchant": "Some Dealership (vehicle)",
+      "category": "Auto"
+    },
+    {
+      "pattern": "ACME CORP PAYROLL",
+      "merchant": "Acme Corp (payroll)",
+      "category": "Income"
+    }
+  ]
+}
