@@ -15,6 +15,13 @@ Everything needed to fix a parser is reproducible without one:
 CI fails the build if any `.pdf`, anything under `out/` or `statements/`, or a
 personal `rules.json` is ever tracked by git.
 
+This applies even to a bank's own official specimen statement — the sample PDF
+some banks publish for marketing or accessibility purposes, with an invented
+name and invented numbers. It's a legitimate way to build a parser without a
+real customer's data, but the rule about what gets *committed* doesn't bend
+for it: pull the phrases and structure you need into a synthetic fixture the
+same way every existing test file already does, never the PDF itself.
+
 ## The one rule that matters
 
 **Never emit a number you cannot prove.** Every parser must validate its own
@@ -28,16 +35,46 @@ than shipping without one.
 
 ## Adding a bank or a product
 
-1. Write a parser module exposing `parse(path) -> Statement`, which appends a
-   `Check` for every total the statement prints and can be reconciled against.
-2. Add one `Format` to `formats.py`: `required` markers that rule it in,
+Start from a real statement's actual text — yours, a volunteer's (never
+committed, see above), or an official specimen (same rule). Writing detection
+phrases or row patterns without having seen the real text is a guess, and this
+project exists specifically to never ship one of those.
+
+1. **Extract the text two ways**: `pypdf`'s default mode and
+   `extraction_mode="layout"`. Every format added so far has needed a
+   different one — Chase's columns survive the default extraction; Bank of
+   America's collapse into one unbroken string without `layout` mode, because
+   the column positions are the only thing separating a description from its
+   amount. Check both before assuming which one you need.
+2. **Identify the proof strategy the layout affords.** There are two in use,
+   and every new format is one or the other:
+   - *Row-by-row*, when the statement prints a running balance after every
+     transaction (see `checking.py`). The strongest proof available — each row
+     stands on its own.
+   - *Section-and-summary*, when it doesn't (see `credit.py`, `boa.py`).
+     Rows are proved in aggregate: each printed section total must equal the
+     rows classified into it, and the summary must equal the sum of the
+     sections. Four to six independent checks per statement, typically.
+3. **Write the parser module**, exposing `parse(path) -> Statement`, appending
+   a `Check` for every total reconciled under whichever strategy applies.
+4. **Add one `Format` to `formats.py`**: `required` markers that rule it in,
    `markers` that add confidence, the account kind, and whether the account is
    an `ASSET` or a `LIABILITY` — the whole-corpus reconciliation weights
    accounts by that.
-3. Add detection tests to `tests/test_formats.py` using representative *text*,
-   not a PDF. Include a case asserting your format scores 0 against the other
-   formats' text; mutual rejection is what stops one parser claiming another's
-   statements.
+5. **Add detection tests** to `tests/test_formats.py` using representative
+   *text*, not a PDF. Include a case asserting your format scores 0 against
+   the other formats' text; mutual rejection is what stops one parser claiming
+   another's statements.
+6. **Run it against the real sample** with `--report` until every check
+   passes. Only a synthetic, invented-value version of the same shapes goes
+   into the committed test suite.
+7. **Extend descriptor normalization only if the bank needs it.** A new
+   channel-prefix format belongs in that bank's own envelope-stripping (see
+   `boa.strip_envelope()` for the pattern) — the ACH-tail and processor-prefix
+   layers in `merchants.py` are already bank-agnostic and should rarely need
+   to change.
+8. **Update the README's Scope table** with the new bank/product and how many
+   real statements it was verified against.
 
 Nothing else needs to change.
 
