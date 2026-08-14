@@ -19,6 +19,8 @@ import statistics
 from collections import defaultdict
 from datetime import date
 
+from . import run
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "out")
 
@@ -265,7 +267,7 @@ def main(argv=None) -> int:
     with open(path, "w") as fh:
         fh.write(html)
     size = os.path.getsize(path) / 1024
-    print(f"wrote {os.path.relpath(path, ROOT)} ({size:,.0f} KB, "
+    print(f"wrote {run.display_path(path)} ({size:,.0f} KB, "
           f"{payload['coverage']['rows']:,} transactions)")
     return 0
 

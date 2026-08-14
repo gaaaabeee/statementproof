@@ -417,6 +417,34 @@ CATEGORY_HINTS: list[tuple[str, str]] = [
 ]
 COMPILED_HINTS = [(re.compile(p), cat) for p, cat in CATEGORY_HINTS]
 
+
+def reload_rules() -> None:
+    """Re-read the user's rules file and rebuild everything derived from it.
+
+    Five module-level tables are built from ``config.load()`` at import time,
+    and ``records.normalize`` memoizes its results. Without this, a rule saved
+    while the app is running has no effect until the process restarts -- and it
+    fails *silently*, which is the worst way for it to fail. Anything that
+    writes to the rules file must call this afterwards.
+
+    Kept beside the tables it rebuilds, so a table added above is noticed here.
+    """
+    global USER_RULES, PAYEE_CATEGORY, ACH_RULES, USER_INFLOW, COMPILED
+
+    USER_RULES = config.load()
+    PAYEE_CATEGORY = config.compiled_payees(USER_RULES)
+    ACH_RULES = config.ach_rules(USER_RULES)
+    USER_INFLOW = config.compiled_merchants(USER_RULES)
+    COMPILED = config.compiled_merchants(USER_RULES) + [
+        (re.compile(p), name, cat) for p, name, cat in RULES
+    ]
+
+    # The cache is keyed on (text, account, kind) and knows nothing about the
+    # ruleset, so stale entries would otherwise survive the reload.
+    from . import records
+    records.normalize.cache_clear()
+
+
 # --- generic descriptor cleanup ---------------------------------------------
 PROCESSOR_PREFIX = re.compile(
     r"^(SQ|TST|DD|WL|FSP|PYN|TM|CTLP|PY|SPO|GLF|UEP|OPY|CL|IN|PP|SP)\s?\*\s*", re.I

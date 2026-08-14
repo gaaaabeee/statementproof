@@ -28,6 +28,16 @@ OUT = os.path.join(ROOT, "out")
 NON_SPEND = {"Transfers", "Refunds", "Income", "Reimbursements", "One-off deposits"}
 
 
+def display_path(path: str) -> str:
+    """Relative when that is shorter and still inside the project, else absolute.
+
+    ``--out`` accepts any directory, so a relpath against the project root can
+    come back as "../../../../private/tmp/...", which is worse than the truth.
+    """
+    rel = os.path.relpath(path, ROOT)
+    return path if rel.startswith("..") else rel
+
+
 def find_pdfs(root: str) -> list:
     """Every PDF under a folder, recursively, in a stable order."""
     out = []
@@ -237,9 +247,9 @@ def write_tables(stmts, out_dir: str = OUT) -> None:
             vals = [round(grid[(m, c)], 2) for c in cats]
             w.writerow([m] + vals + [round(sum(vals), 2)])
 
-    print(f"\nwrote {len(rows):,} transactions -> {os.path.relpath(txn_path, ROOT)}")
-    print(f"wrote {len(stmts)} statements   -> {os.path.relpath(stmt_path, ROOT)}")
-    print(f"wrote {len(months)} months x {len(cats)} categories -> {os.path.relpath(cat_path, ROOT)}")
+    print(f"\nwrote {len(rows):,} transactions -> {display_path(txn_path)}")
+    print(f"wrote {len(stmts)} statements   -> {display_path(stmt_path)}")
+    print(f"wrote {len(months)} months x {len(cats)} categories -> {display_path(cat_path)}")
 
 
 def main(argv=None) -> int:

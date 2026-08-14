@@ -8,14 +8,18 @@ statement prints itself. If a single check fails, the tool writes nothing and
 tells you which statement and which check. No credentials, no aggregator, no
 network calls: your PDFs never leave your computer.
 
+**Double-click `launch-macos.command`** (or `launch-windows.bat`) to open the
+app: drag statements in, verify, label what's left, generate. Or use the CLI:
+
 ```bash
+python -m statementproof.app                  # the app (opens your browser)
 python -m statementproof.run --folder ~/Downloads/statements  # any folder
 python -m statementproof.run                  # defaults to ./statements
 python -m statementproof.run --report         # validate only, write nothing
 python -m statementproof.run --strict         # non-zero exit if anything fails
 python -m statementproof.run --uncategorized  # merchants that need a rule
 python -m statementproof.dashboard            # build out/dashboard.html
-python -m unittest discover -s tests                # 64 tests
+python -m unittest discover -s tests                # 99 tests
 ```
 
 Requires Python 3.9+ and one dependency, `pypdf`.
@@ -36,6 +40,44 @@ plain `pip install .` or upgrade pip first.)
 identified by reading them, not by filename or folder, and the search is
 recursive — a flat dump of PDFs and a nested tree both work. Any file it does
 not recognize is listed as unidentified and skipped, never guessed at.
+
+## The app
+
+`python -m statementproof.app`, or double-click a launcher. It serves a page on
+`127.0.0.1` and opens your browser — **a loopback socket, not a network call**.
+Nothing is sent anywhere and it works with the machine offline.
+
+Four steps: drop PDFs or choose a folder → verify → label what's left →
+generate. Statements are copied into a managed library
+(`~/Library/Application Support/statementproof/` on macOS,
+`%LOCALAPPDATA%` on Windows, `$XDG_DATA_HOME` on Linux) so your financial PDFs
+never live inside the install directory. `$STATEMENTPROOF_HOME` overrides it.
+
+**Why a browser and not a native window.** File drag-and-drop is the point, and
+it comes free in HTML. The alternative is Tk, which needs a Tcl extension for
+drag-and-drop and — on current macOS with Apple's bundled Tk 8.5 — cannot open a
+window at all. The dashboard was already HTML, so this is one rendering stack
+instead of two, and it adds **zero dependencies**.
+
+Because the data behind the socket is a complete financial history, it is
+defended as if exposed: loopback-only bind on a kernel-assigned port, a session
+token required on every request (including the first page load), a `Host` header
+check against DNS-rebinding, no CORS headers ever, and uploads gated on `%PDF`
+magic bytes with sanitized filenames.
+
+### Labeling
+
+Step 3 lists every merchant no rule recognizes, worst-by-spend. Pick a category
+and the app writes a rule to your config and applies it **immediately** — no
+restart.
+
+Rules match the *raw descriptor* while the list shows the *cleaned merchant
+name*, which are different strings, so a naive rule can match nothing at all.
+Each suggested rule is therefore verified before it is offered: it must match
+every row it is meant to cover and must not capture a row that already has a
+different category. Where a payment carries an **ACH originator id**, that is
+offered as the key instead — it does not change from month to month, so one
+rule keeps working.
 
 ## Scope — read this before trying it
 

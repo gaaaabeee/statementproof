@@ -3,7 +3,19 @@
 ## Design guarantees
 
 - **No network access.** The tool makes no outbound requests: no telemetry, no
-  crash reporting, no update checks, no analytics. The generated
+  crash reporting, no update checks, no analytics.
+- **The app's server is loopback-only.** `statementproof.app` binds `127.0.0.1`
+  on a kernel-assigned port and dies with the process. It is a local UI
+  transport, not a network call, and it works offline. Because it fronts a
+  complete financial history it is hardened as if exposed:
+  - a per-session token (`secrets.token_urlsafe`) is required on every request,
+    including the first page load, so another local process cannot drive the
+    API by finding the port;
+  - the `Host` header must be loopback, which blocks DNS-rebinding from a page
+    in the same browser;
+  - no CORS headers are ever sent, so a foreign origin cannot read a response;
+  - uploads must begin with `%PDF`, are size-capped, and are written under a
+    sanitized basename that cannot escape the library. The generated
   `dashboard.html` is fully self-contained — no CDN, no remote fonts, no
   external assets — so it renders with the network off.
 - **No credentials.** Nothing here asks for a banking login, and it does not
@@ -17,6 +29,9 @@
 
 - `statements/`, `out/` and every `*.pdf` are gitignored, and CI fails if any of
   them is ever tracked.
+- The app's library (statements, CSVs, dashboard) lives under the platform user
+  data directory, created `0700`, with statement PDFs and the dashboard written
+  `0600`. `$STATEMENTPROOF_HOME` relocates it.
 - Personal categorization rules live outside the repository, in
   `~/.config/statementproof/rules.json`. That file names real people and
   payees. **Do not commit it, and do not paste it into an issue.**

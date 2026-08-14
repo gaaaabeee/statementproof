@@ -35,6 +35,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 APP_NAME = "statementproof"
 FILENAME = "rules.json"
@@ -80,22 +81,99 @@ def ensure_config() -> str:
 
 def load() -> dict:
     """Read the rules file. A missing file is normal; a broken one is not."""
+    return _sections(read_raw())
+
+
+def read_raw() -> dict:
+    """The file exactly as written, including any keys this version ignores.
+
+    ``load()`` narrows to the sections the categorizer uses. Saving must not go
+    through that narrowing, or hand-written comments and any section added by a
+    newer version would be silently dropped on the next write.
+    """
     path = config_path()
     if not os.path.exists(path):
-        return {"payees": {}, "ach": {}, "merchants": []}
+        return {}
     try:
         with open(path) as fh:
-            data = json.load(fh)
+            return json.load(fh)
     except (json.JSONDecodeError, OSError) as exc:
         raise SystemExit(
             f"could not read rules file {path}: {exc}\n"
             "Fix the JSON or delete the file to start from an empty ruleset."
         )
+
+
+def _sections(data: dict) -> dict:
     return {
         "payees": data.get("payees") or {},
         "ach": data.get("ach") or {},
         "merchants": data.get("merchants") or [],
     }
+
+
+def save(data: dict) -> str:
+    """Write the rules file atomically, 0600. Returns the path.
+
+    Atomic because this file is edited while the app is running: a crash or a
+    full disk midway through a plain write would leave truncated JSON, and
+    ``load()`` treats unreadable JSON as fatal. Writing to a temp file in the
+    same directory and renaming means the file is either the old one or the new
+    one, never half of either.
+    """
+    path = config_path()
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path) or ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            json.dump(data, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        os.chmod(tmp, 0o600)          # it names real people and payees
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+    return path
+
+
+def _with_defaults(raw: dict) -> dict:
+    """Fill in the sections and the explanatory comment for a fresh file."""
+    if not raw:
+        raw = dict(TEMPLATE)
+    raw.setdefault("_comment", TEMPLATE["_comment"])
+    raw.setdefault("payees", {})
+    raw.setdefault("ach", {})
+    raw.setdefault("merchants", [])
+    return raw
+
+
+def add_merchant_rule(pattern: str, merchant: str, category: str) -> str:
+    """Add or replace a merchant rule, keyed on its pattern."""
+    re.compile(pattern)               # fail here rather than on next load
+    raw = _with_defaults(read_raw())
+    entry = {"pattern": pattern, "merchant": merchant, "category": category}
+    rules = [r for r in raw["merchants"]
+             if not (isinstance(r, dict) and r.get("pattern") == pattern)]
+    rules.append(entry)
+    raw["merchants"] = rules
+    return save(raw)
+
+
+def add_ach_rule(originator: str, merchant: str, category: str) -> str:
+    """Add or replace a rule keyed on an ACH originator id."""
+    raw = _with_defaults(read_raw())
+    raw["ach"][str(originator).strip().upper()] = {
+        "merchant": merchant, "category": category,
+    }
+    return save(raw)
+
+
+def remove_merchant_rule(pattern: str) -> str:
+    raw = _with_defaults(read_raw())
+    raw["merchants"] = [r for r in raw["merchants"]
+                        if not (isinstance(r, dict) and r.get("pattern") == pattern)]
+    return save(raw)
 
 
 def compiled_payees(data: dict) -> list:

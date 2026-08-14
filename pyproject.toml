@@ -26,6 +26,7 @@ dependencies = ["pypdf>=6.0"]
 [project.scripts]
 statementproof = "statementproof.run:main"
 statementproof-dashboard = "statementproof.dashboard:main"
+statementproof-app = "statementproof.app:main"
 
 [tool.setuptools]
 packages = ["statementproof"]
