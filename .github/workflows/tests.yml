@@ -32,6 +32,13 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
 
+      # eval_set.jsonl is only ever committed after every case is verified
+      # against actual output (see statementproof/eval.py), so it should
+      # always score 100% -- a drop here means merchants.py regressed against
+      # its own previously-proven behavior, not that the fixture is stale.
+      - name: Categorization eval
+        run: python -m statementproof.eval --min-accuracy 1.0 --min-coverage 1.0 -v
+
       # The tests must not depend on a developer's personal rules file, and
       # must not read one if it happens to exist on the runner.
       - name: Tests are hermetic
