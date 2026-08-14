@@ -8,8 +8,64 @@ statement prints itself. If a single check fails, the tool writes nothing and
 tells you which statement and which check. No credentials, no aggregator, no
 network calls: your PDFs never leave your computer.
 
-**Double-click `launch-macos.command`** (or `launch-windows.bat`) to open the
-app: drag statements in, verify, label what's left, generate. Or use the CLI:
+## Install
+
+**Requirements:** Python 3.9 or newer, and one dependency (`pypdf`) which the
+launcher installs for you. Works on macOS, Windows and Linux.
+
+### 1. Get the code
+
+Download the latest release and unzip it:
+
+**[Releases → Source code (zip)](https://github.com/gaaaabeee/statementproof/releases/latest)**
+
+Or clone it:
+
+```bash
+git clone https://github.com/gaaaabeee/statementproof
+cd statementproof
+```
+
+### 2. Start the app
+
+**macOS** — double-click **`launch-macos.command`**.
+
+> macOS quarantines anything downloaded from the internet, so the first launch
+> is blocked with *"cannot be opened because it is from an unidentified
+> developer."* Either **right-click → Open → Open**, or clear the flag once:
+> ```bash
+> xattr -d com.apple.quarantine launch-macos.command
+> ```
+> If double-clicking does nothing at all, the zip lost the executable bit:
+> ```bash
+> chmod +x launch-macos.command
+> ```
+
+**Windows** — double-click **`launch-windows.bat`**. If SmartScreen warns,
+choose *More info → Run anyway*.
+
+**Any platform, from a terminal:**
+
+```bash
+pip install -r requirements.txt
+python -m statementproof.app
+```
+
+The launcher finds a suitable Python, installs `pypdf` if it is missing, starts
+a local server and opens your browser. Nothing is downloaded or uploaded beyond
+that one pip install.
+
+### 3. Use it
+
+Drop statement PDFs on the page (or choose a folder), verify, label whatever is
+left, generate. **Point it at whatever folder your downloads landed in** —
+statements are identified by reading them, not by filename or folder, and the
+search is recursive, so a flat dump of PDFs and a nested tree both work. Any
+file it does not recognize is listed with the reason, never guessed at.
+
+## Command line
+
+The app is a front end over a CLI that does everything on its own:
 
 ```bash
 python -m statementproof.app                  # the app (opens your browser)
@@ -18,28 +74,15 @@ python -m statementproof.run                  # defaults to ./statements
 python -m statementproof.run --report         # validate only, write nothing
 python -m statementproof.run --strict         # non-zero exit if anything fails
 python -m statementproof.run --uncategorized  # merchants that need a rule
+python -m statementproof.run --out DIR        # write the tables somewhere else
 python -m statementproof.dashboard            # build out/dashboard.html
-python -m unittest discover -s tests                # 99 tests
+python -m unittest discover -s tests          # 100 tests
 ```
 
-Requires Python 3.9+ and one dependency, `pypdf`.
-
-```bash
-git clone https://github.com/gaaaabeee/statementproof
-cd statementproof
-pip install -r requirements.txt          # then use `python -m ...` as above
-pip install .                            # optional: installs the CLI commands
-```
-
-Installing the package adds `statementproof` and
-`statementproof-dashboard` to your path. (`pip install -e .` needs pip
-21.3 or newer -- the version bundled with macOS system Python is older, so use a
-plain `pip install .` or upgrade pip first.)
-
-**Point it at whatever folder your downloads landed in.** Statements are
-identified by reading them, not by filename or folder, and the search is
-recursive — a flat dump of PDFs and a nested tree both work. Any file it does
-not recognize is listed as unidentified and skipped, never guessed at.
+`pip install .` additionally puts `statementproof`, `statementproof-app` and
+`statementproof-dashboard` on your path. (`pip install -e .` needs pip 21.3+;
+the version bundled with macOS system Python is older, so use a plain
+`pip install .` or upgrade pip first.)
 
 ## The app
 
