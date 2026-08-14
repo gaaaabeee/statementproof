@@ -45,11 +45,22 @@ class TestSave(RulesFileTestCase):
         self.assertIn("_comment", data)
         self.assertEqual(data["merchants"][0]["merchant"], "Corner Cafe")
 
+    @unittest.skipIf(sys.platform == "win32",
+                     "Windows has no POSIX modes; os.chmod only toggles read-only "
+                     "and access is governed by the profile directory's ACL")
     def test_file_is_owner_only(self):
         # It names real people and payees.
         config.add_merchant_rule("CORNER CAFE", "Corner Cafe", "Dining & Delivery")
         mode = stat.S_IMODE(os.stat(self.path).st_mode)
         self.assertEqual(mode & 0o077, 0, f"group/other bits set: {mode:o}")
+
+    def test_chmod_never_breaks_the_write(self):
+        # The mode call is best-effort; on platforms that ignore it the rule
+        # must still be saved and readable.
+        config.add_merchant_rule("CORNER CAFE", "Corner Cafe", "Dining & Delivery")
+        self.assertTrue(os.path.exists(self.path))
+        with open(self.path) as fh:
+            self.assertEqual(json.load(fh)["merchants"][0]["pattern"], "CORNER CAFE")
 
     def test_unknown_sections_survive_a_write(self):
         # A newer version's section must not be dropped by an older one.

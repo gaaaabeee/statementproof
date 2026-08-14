@@ -32,6 +32,10 @@
 - The app's library (statements, CSVs, dashboard) lives under the platform user
   data directory, created `0700`, with statement PDFs and the dashboard written
   `0600`. `$STATEMENTPROOF_HOME` relocates it.
+- **On Windows those POSIX modes do not apply** — `os.chmod` there only toggles
+  the read-only bit. Protection comes instead from the ACL inherited from
+  `%LOCALAPPDATA%` / `%APPDATA%`, which is already user-only by default. The
+  `chmod` calls are best-effort and never fail a write.
 - Personal categorization rules live outside the repository, in
   `~/.config/statementproof/rules.json`. That file names real people and
   payees. **Do not commit it, and do not paste it into an issue.**
