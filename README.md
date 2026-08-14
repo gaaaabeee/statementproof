@@ -20,6 +20,18 @@ python -m unittest discover -s tests                # 28 tests
 
 Requires Python 3.9+ and one dependency, `pypdf`.
 
+```bash
+git clone https://github.com/gaaaabeee/statement-reconciler
+cd statement-reconciler
+pip install -r requirements.txt          # then use `python -m ...` as above
+pip install .                            # optional: installs the CLI commands
+```
+
+Installing the package adds `statement-reconciler` and
+`statement-reconciler-dashboard` to your path. (`pip install -e .` needs pip
+21.3 or newer -- the version bundled with macOS system Python is older, so use a
+plain `pip install .` or upgrade pip first.)
+
 **Point it at whatever folder your downloads landed in.** Statements are
 identified by reading them, not by filename or folder, and the search is
 recursive — a flat dump of PDFs and a nested tree both work. Any file it does
