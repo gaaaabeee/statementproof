@@ -60,7 +60,7 @@ confident mistake.
 ```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests
-python -m statement_reconciler.run --report --folder path/to/statements
+python -m statementproof.run --report --folder path/to/statements
 ```
 
 Tests point `STATEMENT_RULES` at `tests/fixtures/rules.json`, so they never read

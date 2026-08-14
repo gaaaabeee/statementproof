@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "statement-reconciler"
+name = "statementproof"
 version = "0.1.0"
 description = "Parse bank statement PDFs into transaction data that reconciles against the statements' own printed totals."
 readme = "README.md"
@@ -24,8 +24,8 @@ classifiers = [
 dependencies = ["pypdf>=6.0"]
 
 [project.scripts]
-statement-reconciler = "statement_reconciler.run:main"
-statement-reconciler-dashboard = "statement_reconciler.dashboard:main"
+statementproof = "statementproof.run:main"
+statementproof-dashboard = "statementproof.dashboard:main"
 
 [tool.setuptools]
-packages = ["statement_reconciler"]
+packages = ["statementproof"]

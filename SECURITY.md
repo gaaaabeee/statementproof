@@ -18,7 +18,7 @@
 - `statements/`, `out/` and every `*.pdf` are gitignored, and CI fails if any of
   them is ever tracked.
 - Personal categorization rules live outside the repository, in
-  `~/.config/statement-reconciler/rules.json`. That file names real people and
+  `~/.config/statementproof/rules.json`. That file names real people and
   payees. **Do not commit it, and do not paste it into an issue.**
 - `out/` contains a complete transaction history. Treat that folder like the
   statements themselves. If your project directory is inside a cloud-synced

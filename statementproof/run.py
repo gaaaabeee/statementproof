@@ -1,8 +1,8 @@
 """CLI: parse every statement, validate it, and write the tables.
 
-    python -m statement_reconciler.run              # parse + report + write out/
-    python -m statement_reconciler.run --report     # report only, write nothing
-    python -m statement_reconciler.run --strict     # non-zero exit if any check fails
+    python -m statementproof.run              # parse + report + write out/
+    python -m statementproof.run --report     # report only, write nothing
+    python -m statementproof.run --strict     # non-zero exit if any check fails
 
 Nothing is written unless every statement passes its own checks, unless you
 pass --force. Silent bad data is worse than no data.

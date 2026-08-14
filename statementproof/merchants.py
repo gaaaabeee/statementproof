@@ -14,7 +14,7 @@ of string. Two passes handle that:
    noise generically and infer a category from the surviving name.
 
 Anything the second pass can't place is left as ``uncategorized`` rather than
-guessed at; ``python -m statement_reconciler.run --uncategorized`` lists what is missing,
+guessed at; ``python -m statementproof.run --uncategorized`` lists what is missing,
 worst-by-spend first, so this file can be extended against real gaps.
 """
 

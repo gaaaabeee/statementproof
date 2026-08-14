@@ -20,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 os.environ["STATEMENT_RULES"] = os.path.join(HERE, "fixtures", "rules.json")
 
-from statement_reconciler.merchants import clean, normalize  # noqa: E402
+from statementproof.merchants import clean, normalize  # noqa: E402
 
 
 class TestClean(unittest.TestCase):

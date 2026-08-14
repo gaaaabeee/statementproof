@@ -1,8 +1,8 @@
 """Build a self-contained HTML dashboard from the parsed tables.
 
-    ./.venv/bin/python -m statement_reconciler.dashboard
+    ./.venv/bin/python -m statementproof.dashboard
 
-Reads out/transactions.csv + out/statements.csv (run statement_reconciler.run first) and
+Reads out/transactions.csv + out/statements.csv (run statementproof.run first) and
 writes out/dashboard.html -- one file, no network, no external assets, so the
 financial data never leaves this machine.
 """
@@ -1103,7 +1103,7 @@ $("#coverage").textContent =
   `${DATA.coverage.statements} statements · ${DATA.coverage.rows.toLocaleString()} transactions · `
   + `${DATA.coverage.start} to ${DATA.coverage.end}`;
 $("#foot").innerHTML =
-  `Generated ${DATA.generated} from Chase statement PDFs by <code>statement_reconciler</code>. `
+  `Generated ${DATA.generated} from Chase statement PDFs by <code>statementproof</code>. `
   + `Every figure traces to a parsed statement row; all 40 statements reconcile against their own printed totals. `
   + `Spending excludes transfers between your own accounts — a card payment out of checking is the same money as `
   + `the purchases it settles, so counting both would double-count. The books close: money in `

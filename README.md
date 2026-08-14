@@ -1,4 +1,4 @@
-# statement-reconciler
+# statementproof
 
 Turn Chase statement PDFs into transaction data you can actually trust, then
 into a dashboard — entirely on your own machine.
@@ -9,26 +9,26 @@ tells you which statement and which check. No credentials, no aggregator, no
 network calls: your PDFs never leave your computer.
 
 ```bash
-python -m statement_reconciler.run --folder ~/Downloads/statements  # any folder
-python -m statement_reconciler.run                  # defaults to ./statements
-python -m statement_reconciler.run --report         # validate only, write nothing
-python -m statement_reconciler.run --strict         # non-zero exit if anything fails
-python -m statement_reconciler.run --uncategorized  # merchants that need a rule
-python -m statement_reconciler.dashboard            # build out/dashboard.html
+python -m statementproof.run --folder ~/Downloads/statements  # any folder
+python -m statementproof.run                  # defaults to ./statements
+python -m statementproof.run --report         # validate only, write nothing
+python -m statementproof.run --strict         # non-zero exit if anything fails
+python -m statementproof.run --uncategorized  # merchants that need a rule
+python -m statementproof.dashboard            # build out/dashboard.html
 python -m unittest discover -s tests                # 28 tests
 ```
 
 Requires Python 3.9+ and one dependency, `pypdf`.
 
 ```bash
-git clone https://github.com/gaaaabeee/statement-reconciler
-cd statement-reconciler
+git clone https://github.com/gaaaabeee/statementproof
+cd statementproof
 pip install -r requirements.txt          # then use `python -m ...` as above
 pip install .                            # optional: installs the CLI commands
 ```
 
-Installing the package adds `statement-reconciler` and
-`statement-reconciler-dashboard` to your path. (`pip install -e .` needs pip
+Installing the package adds `statementproof` and
+`statementproof-dashboard` to your path. (`pip install -e .` needs pip
 21.3 or newer -- the version bundled with macOS system Python is older, so use a
 plain `pip install .` or upgrade pip first.)
 
@@ -73,7 +73,7 @@ pushes the summary block to page two.
 
 ```
 statements/            statement PDFs (any structure; searched recursively)
-statement_reconciler/  the parser
+statementproof/  the parser
 out/                   generated CSVs and dashboard (gitignored)
 ```
 
@@ -135,9 +135,9 @@ contains only national brands and generic patterns.
 Location (first match wins):
 
 1. `$STATEMENT_RULES`
-2. `$XDG_CONFIG_HOME/statement-reconciler/rules.json`
-3. `~/.config/statement-reconciler/rules.json` (macOS, Linux)
-4. `%APPDATA%\statement-reconciler\rules.json` (Windows)
+2. `$XDG_CONFIG_HOME/statementproof/rules.json`
+3. `~/.config/statementproof/rules.json` (macOS, Linux)
+4. `%APPDATA%\statementproof\rules.json` (Windows)
 
 ```json
 {
@@ -232,7 +232,7 @@ Three things bite naive parsers and are handled deliberately:
 
 ## Dashboard
 
-`statement_reconciler.dashboard` writes `out/dashboard.html` — a single file with the data
+`statementproof.dashboard` writes `out/dashboard.html` — a single file with the data
 inlined. **No network requests, no CDN, no external assets.** Open it in a
 browser; re-run after adding statements.
 

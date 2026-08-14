@@ -7,9 +7,9 @@ config file outside the source tree and the shipped ruleset ships empty of them.
 Location (first match wins):
 
 1. ``$STATEMENT_RULES`` -- an explicit path, used by the tests
-2. ``$XDG_CONFIG_HOME/statement-reconciler/rules.json``
-3. ``~/.config/statement-reconciler/rules.json``           (macOS, Linux)
-4. ``%APPDATA%\\statement-reconciler\\rules.json``           (Windows)
+2. ``$XDG_CONFIG_HOME/statementproof/rules.json``
+3. ``~/.config/statementproof/rules.json``           (macOS, Linux)
+4. ``%APPDATA%\\statementproof\\rules.json``           (Windows)
 
 Format -- every field optional::
 
@@ -36,12 +36,12 @@ import os
 import re
 import sys
 
-APP_NAME = "statement-reconciler"
+APP_NAME = "statementproof"
 FILENAME = "rules.json"
 
 TEMPLATE = {
     "_comment": [
-        "Personal categorization rules for statement-reconciler.",
+        "Personal categorization rules for statementproof.",
         "This file stays on your machine; never commit it to source control.",
         "payees: counterparty of a Zelle/Venmo-style payment -> label + category.",
         "merchants: regex against the raw statement descriptor -> merchant + category.",
