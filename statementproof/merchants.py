@@ -276,7 +276,11 @@ PROCESSOR_CATEGORY: list[tuple[re.Pattern, str]] = [
 # transfer (the way a card payment nets against its own purchases) would hide
 # the largest fixed cost in this data.
 P2P_SENT = re.compile(
-    r"^(?:ZELLE PAYMENT TO|VENMO(?: PAYMENT)?|METAPAY|APPLE CASH SENT(?: MONE)?)\s*(.*)$", re.I
+    # "MONEY?" -- some statements print the full word, others truncate to
+    # "MONE"; matching only the truncated form left a stray "Y" glued to the
+    # front of the payee name whenever a statement printed it in full.
+    r"^(?:ZELLE PAYMENT TO|VENMO(?: PAYMENT)?|METAPAY|APPLE CASH SENT(?: MONEY?)?)\s*(.*)$",
+    re.I,
 )
 P2P_RECEIVED = re.compile(r"ZELLE PAYMENT FROM|VENMO CASHOUT|APPLE CASH RECEIVED", re.I)
 # Trailing rail reference codes: "Jpm99B6Zh2Lz", "Bbt313653032", "25081420665".
@@ -482,8 +486,12 @@ PUNCT_EDGE = re.compile(r"^[\s\-*,.]+|[\s\-*,.]+$")
 
 # Checking rows wrap the merchant in the channel that produced it:
 #   "Card Purchase 03/05 Example Cafe TX Card 0000"
+# "With Pin" must be tried before the plain "Card Purchase" alternative --
+# regex alternation takes the first branch that matches at this position, not
+# the longest, so the plain form would match "Card Purchase" out of "Card
+# Purchase With Pin ..." and leave "With Pin 03/06 ..." stuck to the merchant.
 CHECKING_PREFIX = re.compile(
-    r"^(Recurring )?(Card Purchase( Return)?|Card Purchase With Pin|"
+    r"^(Recurring )?(Card Purchase With Pin|Card Purchase( Return)?|"
     r"Non-Chase ATM Withdraw|ATM Withdrawal|Payment Sent|Purchase Return)\s+"
     r"(\d{2}/\d{2}\s+)?", re.I,
 )
@@ -586,7 +594,15 @@ def normalize(description: str, account: str, kind: str) -> tuple[str, str]:
     if kind == "deposit":
         return inflow(description)
 
-    hit = p2p(CHECKING_DATE_PREFIX.sub("", description).strip())
+    # Chase wraps Apple Cash / some P2P rails in the same "Payment Sent MM/DD"
+    # channel prefix as a card payment, not just a bare date -- P2P_SENT is
+    # anchored at the start of the string, so leaving that prefix on hides the
+    # rail entirely and the row falls through to being uncategorized.
+    p2p_text = CHECKING_PREFIX.sub("", description)
+    p2p_text = CHECKING_DATE_PREFIX.sub("", p2p_text)
+    p2p_text = CHECKING_CARD_SUFFIX.sub("", p2p_text)
+    p2p_text = TRAILING_STATE.sub("", p2p_text).strip()
+    hit = p2p(p2p_text)
     if hit:
         return hit
 

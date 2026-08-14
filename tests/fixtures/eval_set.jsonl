@@ -72,3 +72,6 @@
 {"description": "RIVERBEND TRADING POST TX", "account": "credit", "kind": "purchase", "expected_merchant": "Riverbend Trading", "expected_category": "uncategorized"}
 {"description": "APEX SIGNWORKS INC SOMETOWN TX", "account": "checking", "kind": "withdrawal", "expected_merchant": "Apex Signworks INC", "expected_category": "uncategorized"}
 {"description": "MERIDIAN DATA SERVICES LAS VEGAS NV", "account": "credit", "kind": "purchase", "expected_merchant": "Meridian Data Services", "expected_category": "uncategorized"}
+{"description": "Card Purchase With Pin 03/06 Example Cafe TX Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "Example Cafe", "expected_category": "Dining & Delivery"}
+{"description": "Payment Sent 01/19 Apple Cash Sent Money Some Person CA Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Some Person", "expected_category": "People & Services"}
+{"description": "Payment Sent 01/19 Apple Cash Sent Mone Some Person CA Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Some Person", "expected_category": "People & Services"}

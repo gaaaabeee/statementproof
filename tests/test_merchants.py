@@ -173,6 +173,36 @@ class TestNormalize(unittest.TestCase):
         for desc, expected in cases:
             self.assertEqual(self.n(desc, "checking", "withdrawal")[1], expected, desc)
 
+    def test_with_pin_channel_prefix_is_fully_stripped(self):
+        # Regex alternation matches the first branch that fits, not the
+        # longest -- "Card Purchase" alone used to win over "Card Purchase
+        # With Pin", leaving "With Pin 03/06" stuck to the front of the name.
+        self.assertEqual(
+            self.n("Card Purchase With Pin 03/06 Example Cafe TX Card 0000",
+                   "checking", "withdrawal"),
+            ("Example Cafe", "Dining & Delivery"),
+        )
+
+    def test_p2p_rail_wrapped_in_a_payment_sent_channel_prefix_is_recognised(self):
+        # Chase wraps some P2P rails in the same "Payment Sent MM/DD" channel
+        # prefix as a card payment. P2P_SENT is anchored at the start of the
+        # string, so leaving that prefix on hid the rail entirely and the row
+        # fell through to uncategorized instead of being recognised as spend.
+        self.assertEqual(
+            self.n("Payment Sent 01/19 Apple Cash Sent Money Some Person CA Card 0000",
+                   "checking", "withdrawal"),
+            ("To Some Person", "People & Services"),
+        )
+
+    def test_apple_cash_truncated_to_mone_still_matches(self):
+        # Some statements truncate "Money" to "Mone"; the regex must accept
+        # both spellings rather than leaving a stray "Y" on the payee name.
+        self.assertEqual(
+            self.n("Payment Sent 01/19 Apple Cash Sent Mone Some Person CA Card 0000",
+                   "checking", "withdrawal"),
+            ("To Some Person", "People & Services"),
+        )
+
     def test_unknown_merchant_is_left_uncategorized_not_guessed(self):
         merchant, category = self.n("UNKNOWN VENDOR LLC SOMETOWN TX")
         self.assertEqual(category, "uncategorized")
