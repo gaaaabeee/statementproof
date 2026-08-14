@@ -59,4 +59,19 @@ jobs:
           if [ -n "$rules" ]; then
             echo "::error::a personal rules file is tracked:"; echo "$rules"; exit 1
           fi
-          echo "clean: no statements, no output, no personal rules"
+
+          # The checks above trust the filename. A statement committed as
+          # "fixture.txt" or "sample.bin" passes all of them, so identify PDFs
+          # by their magic bytes instead -- the one property a rename cannot
+          # change. No PDF belongs in this repo under any name.
+          pdfs=""
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            case "$(head -c 5 -- "$f" 2>/dev/null)" in
+              %PDF*) pdfs="$pdfs$f"$'\n' ;;
+            esac
+          done < <(git ls-files)
+          if [ -n "$pdfs" ]; then
+            echo "::error::a PDF is tracked under a non-.pdf name:"; echo "$pdfs"; exit 1
+          fi
+          echo "clean: no statements, no output, no personal rules, no disguised PDFs"
