@@ -1,0 +1,17 @@
+# Every path requires review from the owner before it can merge.
+#
+# This is deliberately blanket rather than per-directory. The project's value
+# is that its numbers are proven and that no real financial data reaches the
+# repo; both are properties of the whole tree, and neither survives a merge
+# nobody read.
+*                     @gaaaabeee
+
+# Called out separately so a change here can never be mistaken for routine.
+# These are the files that decide whether financial data can enter the repo
+# at all, and a weakening of any one of them is silent until it is too late.
+/.gitignore           @gaaaabeee
+/.github/             @gaaaabeee
+/CONTRIBUTING.md      @gaaaabeee
+/SECURITY.md          @gaaaabeee
+/statementproof/config.py   @gaaaabeee
+/statementproof/paths.py    @gaaaabeee
