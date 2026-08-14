@@ -355,6 +355,14 @@ TEMPLATE = r"""<!doctype html>
     margin: 20px 0 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
   }
   .filters .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-right: 4px; }
+  .daterange { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
+  .daterange .to { color: var(--muted); font-size: 13px; }
+  .daterange input[type="date"] {
+    font: inherit; font-size: 13px; color: var(--text-secondary);
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 8px; color-scheme: light dark;
+  }
+  .daterange input[type="date"]:hover { color: var(--text-primary); }
 
   .hero { margin: 8px 0 28px; }
   .hero .figure { font-size: 52px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
@@ -427,8 +435,12 @@ TEMPLATE = r"""<!doctype html>
     <button data-range="all" aria-pressed="true">All</button>
     <button data-range="12">Last 12 months</button>
     <button data-range="6">Last 6 months</button>
-    <button data-range="2026">2026</button>
-    <button data-range="2025">2025</button>
+    <span id="yearButtons"></span>
+    <span class="daterange">
+      <input type="date" id="rangeStart" aria-label="Custom range start">
+      <span class="to">–</span>
+      <input type="date" id="rangeEnd" aria-label="Custom range end">
+    </span>
   </div>
 
   <div class="hero">
@@ -551,11 +563,16 @@ const MONTH_LBL = m => {
 
 let range = "all";
 let showTables = false;
+// Set only when the custom date inputs drive the filter instead of a preset.
+let customStart = null, customEnd = null;   // "YYYY-MM-DD" or null
 
 function monthsInRange() {
   const all = DATA.months;
+  if (range === "custom" && customStart && customEnd) {
+    return all.filter(m => m >= customStart.slice(0, 7) && m <= customEnd.slice(0, 7));
+  }
   if (range === "all") return all;
-  if (range === "2025" || range === "2026") return all.filter(m => m.startsWith(range));
+  if (/^\d{4}$/.test(range)) return all.filter(m => m.startsWith(range));
   return all.slice(-parseInt(range, 10));
 }
 
@@ -1093,14 +1110,43 @@ function renderAll() {
   document.querySelectorAll(".tableview").forEach(t => t.classList.toggle("on", showTables));
 }
 
+// Year buttons are generated from the data's own span rather than hardcoded,
+// so they never claim a year that isn't actually present.
+const years = [...new Set(DATA.months.map(m => m.slice(0, 4)))];
+$("#yearButtons").innerHTML = years.map(y => `<button data-range="${y}">${y}</button>`).join("");
+
+function setPresetPressed(pressed) {
+  document.querySelectorAll("[data-range]").forEach(o => o.setAttribute("aria-pressed", "false"));
+  if (pressed) pressed.setAttribute("aria-pressed", "true");
+}
+
 document.querySelectorAll("[data-range]").forEach(b => {
   b.addEventListener("click", () => {
-    document.querySelectorAll("[data-range]").forEach(o => o.setAttribute("aria-pressed", "false"));
-    b.setAttribute("aria-pressed", "true");
+    setPresetPressed(b);
     range = b.dataset.range;
+    customStart = customEnd = null;
+    startInput.value = endInput.value = "";
     renderAll();
   });
 });
+
+// Custom range: bounded by the earliest and latest date actually in the data,
+// so a picked date can never fall outside what the statements cover.
+const startInput = $("#rangeStart"), endInput = $("#rangeEnd");
+startInput.min = endInput.min = DATA.coverage.start;
+startInput.max = endInput.max = DATA.coverage.end;
+
+function applyCustomRange() {
+  if (!startInput.value || !endInput.value) return;
+  if (startInput.value > endInput.value) return;   // ignore an inverted range mid-edit
+  customStart = startInput.value;
+  customEnd = endInput.value;
+  range = "custom";
+  setPresetPressed(null);
+  renderAll();
+}
+startInput.addEventListener("change", applyCustomRange);
+endInput.addEventListener("change", applyCustomRange);
 $("#tableToggle").addEventListener("click", () => {
   showTables = !showTables;
   $("#tableToggle").setAttribute("aria-pressed", String(showTables));

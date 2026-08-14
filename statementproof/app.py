@@ -250,7 +250,8 @@ def uncategorized() -> dict:
         if c != "uncategorized":
             continue
         g = groups.setdefault(m, {"merchant": m, "count": 0, "total": 0.0,
-                                  "sample": t.match_text[:90], "ach": None})
+                                  "sample": t.match_text[:90], "ach": None,
+                                  "guess": merchants.suggest_category(m)})
         g["count"] += 1
         g["total"] = round(g["total"] + -t.signed, 2)
         g["ach"] = g["ach"] or merchants.ach_originator(t.match_text)

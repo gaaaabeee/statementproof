@@ -20,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 os.environ["STATEMENT_RULES"] = os.path.join(HERE, "fixtures", "rules.json")
 
-from statementproof.merchants import clean, normalize  # noqa: E402
+from statementproof.merchants import clean, normalize, suggest_category  # noqa: E402
 
 
 class TestClean(unittest.TestCase):
@@ -209,6 +209,31 @@ class TestNormalize(unittest.TestCase):
         merchant, category = self.n("UNKNOWN VENDOR LLC SOMETOWN TX")
         self.assertEqual(category, "uncategorized")
         self.assertEqual(merchant, "Unknown Vendor LLC")
+
+
+class TestSuggestCategory(unittest.TestCase):
+    """suggest_category() is advisory-only -- it must never be confident about
+    an opaque proper noun, and must never be consulted by normalize() itself.
+    """
+
+    def test_a_recognisable_keyword_gets_a_guess(self):
+        self.assertEqual(suggest_category("EXAMPLE PATISSERIE HOUSTON TX"), "Dining & Delivery")
+        self.assertEqual(suggest_category("SOMETOWN FLORIST"), "Shopping")
+        self.assertEqual(suggest_category("RIVER OAKS CAR WASH"), "Auto")
+
+    def test_an_opaque_proper_noun_gets_no_guess(self):
+        # The whole point: most of the long tail has no keyword in it at all,
+        # and this must say so rather than invent one.
+        self.assertIsNone(suggest_category("FULLER LIFE 832-848-0870 TX"))
+        self.assertIsNone(suggest_category("STEP IN HOUSTON TX"))
+
+    def test_suggestions_never_leak_into_normalize(self):
+        # A word only SUGGEST_HINTS recognises (not CATEGORY_HINTS) must still
+        # come back uncategorized from normalize() -- the guess is advisory
+        # only and must never silently become the real answer.
+        desc = "SOMETOWN FLORIST HOUSTON TX"
+        self.assertIsNotNone(suggest_category(desc))
+        self.assertEqual(normalize(desc, "credit", "purchase")[1], "uncategorized")
 
 
 if __name__ == "__main__":

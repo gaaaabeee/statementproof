@@ -425,6 +425,35 @@ CATEGORY_HINTS: list[tuple[str, str]] = [
 ]
 COMPILED_HINTS = [(re.compile(p), cat) for p, cat in CATEGORY_HINTS]
 
+# --- advisory-only suggestions for the labeling UI --------------------------
+# Anything reaching the labeling panel already failed CATEGORY_HINTS above, so
+# there is nothing to lose by trying looser keywords here -- but that looseness
+# is exactly why this table is kept separate and is never consulted by
+# normalize(). It only pre-fills a dropdown for the user to confirm or change;
+# nothing here is ever written to a rule without that confirmation. Most of the
+# long tail is an opaque proper noun with no keyword in it at all -- e.g. a bar
+# named after its street address -- and no local, non-guessing heuristic can
+# place those. suggest_category() returns None rather than pretend otherwise.
+SUGGEST_HINTS: list[tuple[str, str]] = [
+    (r"PATISSERIE|BOULANGERIE|CROISSANT|BRIOCHE|BAGUETTE", DINING),
+    (r"\bCLUB\b|NIGHTCLUB|TAP ?ROOM|BREW ?PUB", DINING),
+    (r"\bWASH\b|DETAIL(ING)?\b|MUFFLER|\bTIRES?\b", AUTO),
+    (r"BARBER|\bWAX(ING)?\b|\bLASH(ES)?\b|\bBROWS?\b|\bNAILS?\b", PERSONAL),
+    (r"\bVET\b|VETERINARY|ANIMAL (HOSPITAL|CLINIC)", HEALTH),
+    (r"FLORIST|\bFLOWERS?\b|BOUQUET", SHOPPING),
+    (r"DAYCARE|PRESCHOOL|MONTESSORI|CHILDCARE", HOUSEHOLD),
+]
+COMPILED_SUGGEST_HINTS = [(re.compile(p, re.I), cat) for p, cat in SUGGEST_HINTS]
+
+
+def suggest_category(text: str) -> str | None:
+    """A loose, advisory-only category guess -- None when nothing plausible fires."""
+    cleaned = clean(text.upper())
+    for pattern, category in COMPILED_SUGGEST_HINTS:
+        if pattern.search(cleaned):
+            return category
+    return None
+
 
 def reload_rules() -> None:
     """Re-read the user's rules file and rebuild everything derived from it.

@@ -103,7 +103,11 @@ against DNS-rebinding, no CORS, and uploads gated on `%PDF` magic bytes. See
 Pick a category and the rule is written to your config and applied immediately —
 no restart. Rules match the *raw descriptor* while the list shows the *cleaned
 name*, so each suggestion is verified before it is offered: it must cover every
-row it targets and steal none that already have a category.
+row it targets and steal none that already have a category. **Auto-categorize**
+pre-fills a guess for merchants a loose local keyword match recognizes — a
+florist, a car wash, a bakery — and leaves the rest blank rather than invent
+one; most of the long tail is an opaque proper noun with no keyword to catch,
+and nothing here is written until you review it and hit **Save all**.
 
 ## Scope — read this before trying it
 
@@ -151,9 +155,11 @@ by_category.csv     month × category
 dashboard.html      self-contained; no CDN, no external assets, opens offline
 ```
 
-The dashboard carries a period filter scoping every chart, money in vs money
-out, monthly spending by category, account balances on one axis, interest and
-fees, category and merchant breakdowns, detected recurring charges, and a
+The dashboard carries a period filter scoping every chart — presets, or a
+custom date range bounded by the earliest and latest statement you have —
+money in vs money out, monthly spending by category, account balances on one
+axis, interest and fees, category and merchant breakdowns, detected recurring
+charges, and a
 searchable transaction table.
 
 **Two columns, deliberately.** `amount` is exactly what the statement prints, so

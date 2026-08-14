@@ -75,6 +75,7 @@ TEMPLATE = r"""<!doctype html>
   .banner{border-radius:9px;padding:10px 13px;font-size:13px;margin-bottom:12px}
   .banner.bad{background:color-mix(in srgb,var(--critical) 12%,transparent);color:var(--critical)}
   .banner.ok{background:color-mix(in srgb,var(--good) 12%,transparent);color:var(--good)}
+  .guess{color:var(--warn);white-space:nowrap}
   code{font-size:12px;background:var(--plane);padding:1px 5px;border-radius:4px}
 </style>
 </head>
@@ -229,7 +230,7 @@ async function loadLabels() {
     $("#labelOut").innerHTML = `<div class="banner ok">Everything is categorized.</div>`; return;
   }
   const rows = u.items.map((it, i) => `
-    <tr data-m="${encodeURIComponent(it.merchant)}">
+    <tr data-m="${encodeURIComponent(it.merchant)}" data-guess="${it.guess || ""}">
       <td>${it.merchant}<div class="tag muted">${it.sample}</div></td>
       <td class="num">${it.count}</td>
       <td class="num">${money(it.total)}</td>
@@ -238,32 +239,84 @@ async function loadLabels() {
           <option value="">— category —</option>
           ${CATEGORIES.map(c=>`<option>${c}</option>`).join("")}
         </select>
+        ${it.guess ? `<span class="tag guess" data-role="guessflag" title="A loose keyword match, not a verified rule -- check it before saving">guess: ${it.guess}</span>` : ""}
         ${it.ach ? `<label class="tag achbox" title="Key the rule on the ACH originator id (${it.ach}), which does not change from month to month"><input type="checkbox" data-role="ach" checked>ACH&nbsp;id</label>` : ""}
       </td>
       <td><button data-role="save">Save</button> <span class="tag" data-role="msg"></span></td>
     </tr>`).join("");
   $("#labelOut").innerHTML =
     `<div class="banner bad">${money(u.remaining)} across ${u.items.length} merchants unlabeled</div>`
+    + `<div class="row" style="margin-bottom:10px">`
+    + `<button id="autoCat">Auto-categorize</button>`
+    + `<button id="saveAll">Save all</button>`
+    + `<span class="tag" id="bulkMsg"></span></div>`
     + `<div class="scroll"><table><thead><tr><th>Merchant</th><th class="num">Txns</th>`
     + `<th class="num">Total</th><th>Category</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 
+  // Shared by the per-row Save button and Save all, so both go through the
+  // same verified-before-write path -- a bulk action must not be a shortcut
+  // around the check that a rule only matches the rows it claims to.
+  async function saveRow(tr) {
+    const merchant = decodeURIComponent(tr.dataset.m);
+    const cat = tr.querySelector('[data-role="cat"]').value;
+    const achBox = tr.querySelector('[data-role="ach"]');
+    const msg = tr.querySelector('[data-role="msg"]');
+    if (!cat) { msg.textContent = "pick a category"; return "skipped"; }
+    msg.textContent = "saving…";
+    const r = await api("/api/label", { method:"POST", body: JSON.stringify({
+      merchant, category: cat, use_ach: achBox ? achBox.checked : false }) });
+    if (!r.ok) { msg.innerHTML = `<span class="bad">${r.error}</span>`; return "failed"; }
+    tr.style.opacity = .45;
+    msg.innerHTML = `<span class="ok">saved</span>`;
+    return "saved";
+  }
+
   $("#labelOut").querySelectorAll('[data-role="save"]').forEach(btn => {
     btn.onclick = async () => {
-      const tr = btn.closest("tr");
-      const merchant = decodeURIComponent(tr.dataset.m);
-      const cat = tr.querySelector('[data-role="cat"]').value;
-      const achBox = tr.querySelector('[data-role="ach"]');
-      const msg = tr.querySelector('[data-role="msg"]');
-      if (!cat) { msg.textContent = "pick a category"; return; }
-      btn.disabled = true; msg.textContent = "saving…";
-      const r = await api("/api/label", { method:"POST", body: JSON.stringify({
-        merchant, category: cat, use_ach: achBox ? achBox.checked : false }) });
-      if (!r.ok) { msg.innerHTML = `<span class="bad">${r.error}</span>`; btn.disabled = false; return; }
-      tr.style.opacity = .45;
-      msg.innerHTML = `<span class="ok">saved</span>`;
+      btn.disabled = true;
+      const outcome = await saveRow(btn.closest("tr"));
+      if (outcome !== "saved") { btn.disabled = false; return; }
       setTimeout(loadLabels, 400);
     };
   });
+
+  // Fills every still-blank dropdown with its guess, if it has one. Never
+  // overwrites a category the user already picked, and never saves anything
+  // by itself -- the user reviews (or overrides) each guess, then saves.
+  $("#autoCat").onclick = () => {
+    const trs = [...$("#labelOut").querySelectorAll("tbody tr")];
+    let filled = 0;
+    trs.forEach(tr => {
+      const guess = tr.dataset.guess;
+      const select = tr.querySelector('[data-role="cat"]');
+      if (guess && !select.value) { select.value = guess; filled++; }
+    });
+    const skipped = trs.length - filled;
+    $("#bulkMsg").textContent = filled
+      ? `filled ${filled} of ${trs.length} — review each, then Save all`
+        + (skipped ? ` (${skipped} had no confident guess)` : "")
+      : "no confident guesses for what's left — pick categories by hand";
+  };
+
+  $("#saveAll").onclick = async () => {
+    $("#autoCat").disabled = true;
+    const btn = $("#saveAll");
+    btn.disabled = true;
+    const trs = [...$("#labelOut").querySelectorAll("tbody tr")];
+    let saved = 0, skipped = 0, failed = 0;
+    for (const tr of trs) {
+      const before = tr.querySelector('[data-role="cat"]').value;
+      if (!before) { skipped++; continue; }
+      const outcome = await saveRow(tr);
+      if (outcome === "saved") saved++;
+      else if (outcome === "failed") failed++;
+      else skipped++;
+    }
+    $("#bulkMsg").innerHTML = `saved ${saved}`
+      + (skipped ? `, ${skipped} skipped (no category chosen)` : "")
+      + (failed ? `, <span class="bad">${failed} failed</span>` : "");
+    if (saved) setTimeout(loadLabels, 600); else { btn.disabled = false; $("#autoCat").disabled = false; }
+  };
 }
 
 /* ---------- 4. generate ---------- */
