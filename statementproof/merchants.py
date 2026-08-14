@@ -114,6 +114,10 @@ RULES: list[tuple[str, str, str]] = [
     (r"JERSEY MIKES", "Jersey Mike's", DINING),
     (r"STARBUCKS", "Starbucks", DINING),
     (r"CHIPOTLE", "Chipotle", DINING),
+    (r"HOPDODDY", "Hopdoddy", DINING),
+
+    # --- register line items, not merchants in their own right --------------
+    (r"\bPMUSA\b", "Philip Morris USA", SHOPPING),
 
     # --- subscriptions & digital -------------------------------------------
     (r"NETFLIX", "Netflix", SUBSCRIPTIONS),

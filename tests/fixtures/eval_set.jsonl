@@ -75,3 +75,5 @@
 {"description": "Card Purchase With Pin 03/06 Example Cafe TX Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "Example Cafe", "expected_category": "Dining & Delivery"}
 {"description": "Payment Sent 01/19 Apple Cash Sent Money Some Person CA Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Some Person", "expected_category": "People & Services"}
 {"description": "Payment Sent 01/19 Apple Cash Sent Mone Some Person CA Card 0000", "account": "checking", "kind": "withdrawal", "expected_merchant": "To Some Person", "expected_category": "People & Services"}
+{"description": "HOPDODDY BURGER BAR HOUSTON TX", "account": "credit", "kind": "purchase", "expected_merchant": "Hopdoddy", "expected_category": "Dining & Delivery"}
+{"description": "PMUSA 000000 SOMETOWN 000-0000000 GA", "account": "credit", "kind": "purchase", "expected_merchant": "Philip Morris USA", "expected_category": "Shopping"}

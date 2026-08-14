@@ -169,6 +169,8 @@ class TestNormalize(unittest.TestCase):
             ("BASS PRO SPRIN HOUSTON TX", "Shopping"),
             ("SOUTHWES 8004359792 TX", "Travel"),
             ("TX DPS DL OFFICE AUSTIN TX", "Government & Taxes"),
+            ("HOPDODDY BURGER BAR HOUSTON TX", "Dining & Delivery"),
+            ("PMUSA 000000 SOMETOWN 000-0000000 GA", "Shopping"),
         ]
         for desc, expected in cases:
             self.assertEqual(self.n(desc, "checking", "withdrawal")[1], expected, desc)
