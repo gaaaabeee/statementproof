@@ -471,6 +471,13 @@ TEMPLATE = r"""<!doctype html>
     <ul class="insights" id="insights"></ul>
   </div>
 
+  <div class="card" id="fixedCard" style="display:none">
+    <h2>Monthly payments</h2>
+    <p class="note" id="fixedNote"></p>
+    <div class="plot"><svg id="fixed" role="img" aria-label="Concrete monthly payments by merchant"></svg></div>
+    <div class="tableview" id="fixedTable"></div>
+  </div>
+
   <div class="card">
     <h2>Money in vs money out</h2>
     <p class="note" id="flowNote"></p>
@@ -729,6 +736,31 @@ function drawInsights() {
   $("#insights").innerHTML = items.map(it =>
     `<li><span class="mark ${it.tone}">${MARK[it.tone]}</span><span>${it.html}</span></li>`
   ).join("");
+}
+
+// Every active recurring charge, whatever its category -- rent, insurance,
+// subscriptions, utilities, a car loan, anything billed on a regular cadence.
+// Not period-scoped: this is "what's currently a standing obligation," which
+// is a snapshot, not a window. Uses the exact same source (DATA.recurring,
+// active only) as "Detected recurring charges" below, so the two totals can
+// never disagree.
+function drawFixed() {
+  const items = DATA.recurring.filter(r => r.active)
+    .map(r => ({ name: r.merchant, category: r.category, cadence: r.cadence, monthly: r.monthly }))
+    .sort((a, b) => b.monthly - a.monthly);
+  const card = $("#fixedCard");
+  if (!items.length) { card.style.display = "none"; return; }
+  card.style.display = "";
+  const total = items.reduce((a, d) => a + d.monthly, 0);
+  $("#fixedNote").innerHTML =
+    `<b>${money(total)}/month</b> · ${money(total * 12)}/year across ${items.length} active recurring `
+    + `charge${items.length === 1 ? "" : "s"}. Quarterly and annual bills are shown at their monthly-equivalent `
+    + `cost. Detected from billing regularity, not a category list — see “Detected recurring charges” below `
+    + `for the full method.`;
+  drawBars("#fixed", "#fixedTable", items, "name", "monthly", d =>
+    `<div class="r"><span>Category</span><b>${d.category}</b></div>`
+    + (d.cadence !== "monthly"
+        ? `<div class="r"><span>Actually billed</span><b>${d.cadence}</b></div>` : ""));
 }
 
 /* ---------- tooltip ---------- */
@@ -1255,6 +1287,7 @@ function drawTxns() {
 function renderAll() {
   drawHeadline();
   drawInsights();
+  drawFixed();
   drawFlow();
   drawStack();
   drawBalance();
