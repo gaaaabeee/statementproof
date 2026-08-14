@@ -45,9 +45,13 @@ TEMPLATE = {
         "This file stays on your machine; never commit it to source control.",
         "payees: counterparty of a Zelle/Venmo-style payment -> label + category.",
         "merchants: regex against the raw statement descriptor -> merchant + category.",
+        "ach: ACH originator id (CO ID / PPD ID on the statement) -> merchant + category.",
+        "  Prefer ach over merchants for rent, payroll and utilities: the id is",
+        "  stable while the descriptor text changes every month.",
         "User rules are checked before the built-in ones, so they always win.",
     ],
     "payees": {},
+    "ach": {},
     "merchants": [],
 }
 
@@ -78,7 +82,7 @@ def load() -> dict:
     """Read the rules file. A missing file is normal; a broken one is not."""
     path = config_path()
     if not os.path.exists(path):
-        return {"payees": {}, "merchants": []}
+        return {"payees": {}, "ach": {}, "merchants": []}
     try:
         with open(path) as fh:
             data = json.load(fh)
@@ -89,6 +93,7 @@ def load() -> dict:
         )
     return {
         "payees": data.get("payees") or {},
+        "ach": data.get("ach") or {},
         "merchants": data.get("merchants") or [],
     }
 
@@ -104,6 +109,23 @@ def compiled_payees(data: dict) -> list:
         if not category:
             continue
         out.append((re.compile(r"^" + re.escape(name), re.I), label, category))
+    return out
+
+
+def ach_rules(data: dict) -> dict:
+    """{originator_id: (merchant, category)} from the ach table.
+
+    Keying on the ACH originator id rather than the payee text is the more
+    durable rule: the id is assigned to the originator and does not change when
+    the descriptor text does.
+    """
+    out = {}
+    for key, spec in data.get("ach", {}).items():
+        if not isinstance(spec, dict):
+            continue
+        merchant, category = spec.get("merchant"), spec.get("category")
+        if merchant and category:
+            out[str(key).strip().upper()] = (merchant, category)
     return out
 
 

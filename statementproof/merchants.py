@@ -206,6 +206,28 @@ RULES: list[tuple[str, str, str]] = [
     (r"COUNTRY CLUB|SIM RACING|PICKLEBALL", "Clubs & sports", RECREATION),
     (r"BLUECHEW|HIMS |ROMAN HEALTH", "Telehealth", HEALTH),
     (r"CHARGE UP|CHARGEPOINT|EVGO|ELECTRIFY AMERICA", "EV charging", GAS),
+
+    # --- national chains, added from a second bank's statements --------------
+    # Several are matched in truncated form: statements clip merchant names to a
+    # fixed width, so "WHOLEFDS" and "Sephora Memori" are what actually prints.
+    (r"WHOLEFDS|WHOLE FOODS", "Whole Foods", GROCERIES),
+    (r"INSTACART", "Instacart", GROCERIES),
+    (r"SEPHORA|\bULTA\b", "Sephora / Ulta", PERSONAL),
+    (r"VICTORIA'?S SEC", "Victoria's Secret", SHOPPING),
+    (r"TJ ?MAXX|MARSHALLS|ROSS DRESS|BURLINGTON STORES", "Off-price apparel", SHOPPING),
+    (r"URBAN OUTFITTERS|ANTHROPOLOGIE|OLD NAVY|GAP STORES", "Apparel", SHOPPING),
+    (r"GOODWILL|SALVATION ARMY", "Thrift store", SHOPPING),
+    (r"WM SUPERCENTER", "Walmart", SHOPPING),
+    (r"LUFTHAN|BRITISH AIRW|AIR ?FRANCE|EMIRATES", "Airline", TRAVEL),
+    (r"UNITED 800932|UNITED AIRLINES", "United Airlines", TRAVEL),
+    (r"^TM\s?\*", "Ticketmaster", ENTERTAINMENT),
+    (r"AP GAS ?& ?ELECTRIC|AP GAS", "Electricity", UTILITIES),
+    (r"METRO BY T ?MOB|METROPCS|CRICKET WIRELESS|BOOST MOBILE", "Phone", UTILITIES),
+    (r"ALLIANZ", "Allianz (insurance)", INSURANCE),
+    (r"WAFFLE HOUS|DENNYS|IHOP\b|CRACKER BARREL", "Diner", DINING),
+    (r"365 VEND|CTLP\*|CANTALOUPE", "Vending machine", DINING),
+    (r"GUN RANGE|SHOOTING RANGE", "Shooting range", RECREATION),
+    (r"\bCASINO\b|LUXOR CAS", "Casino", GAMBLING),
     (r"AEROPUERTO|MIGRACION", "Airport & immigration fees", TRAVEL),
     (r"METAPAY", "Meta Pay", TRANSFERS),
 ]
@@ -238,6 +260,48 @@ P2P_REF = re.compile(r"\s*(?:JPM\w+|BBT\d+|COF\w+|BAC\w+|WEB ID:.*|\d{9,})\s*$",
 # to be told to us. It is also personal data about third parties, which is why
 # it lives in the user's config file and ships empty. See config.py.
 PAYEE_CATEGORY: list = config.compiled_payees(USER_RULES)
+
+
+# --- ACH ---------------------------------------------------------------------
+# An ACH descriptor is a network-standard record rather than a bank's
+# formatting choice, so this is the one piece of descriptor handling that is
+# genuinely universal. Its tail carries a *volatile* per-transaction reference
+# and a *stable* originator id:
+#
+#   Example Properties DES:WEB PMTS ID:AB12CD INDN:A Person CO ID:9876543210
+#   Example Properties DES:WEB PMTS ID:EF34GH INDN:A Person CO ID:9876543210
+#
+# Keying on the raw text turns one landlord into a new merchant every month. In
+# one real statement set, six variants of a single payee were 51% of all
+# uncategorized spend. Stripping the tail collapses them, because the payee name
+# in front of it is stable.
+#
+# The originator id is the better identity -- it survives a payee being renamed
+# and is unique per originator -- so user rules can key on it directly.
+ACH_TAIL = re.compile(
+    r"\s+(?:DES:|INDN:|CO ID:|(?:PPD|CCD|WEB|TEL|ARC|IAT)\s*ID:).*$", re.I
+)
+ACH_CO_ID = re.compile(r"\bCO ID:\s*(\w+)", re.I)
+ACH_TYPE_ID = re.compile(r"\b(?:PPD|CCD|WEB|TEL|ARC|IAT)\s*ID:\s*(\w+)", re.I)
+
+
+def ach_originator(text: str):
+    """The stable originator id of an ACH entry, if it has one."""
+    hit = ACH_CO_ID.search(text) or ACH_TYPE_ID.search(text)
+    return hit.group(1) if hit else None
+
+
+def strip_ach_tail(text: str) -> str:
+    """Drop the ACH reference block, keeping the payee name in front of it.
+
+    Also removes ``INDN:`` -- the individual-name field, which holds the account
+    holder's own name and has no business in a merchant label.
+    """
+    return ACH_TAIL.sub("", text).strip()
+
+
+# ACH originator id -> (merchant, category), from the user's config.
+ACH_RULES: dict = config.ach_rules(USER_RULES)
 
 
 # --- inflows ----------------------------------------------------------------
@@ -277,9 +341,13 @@ def inflow(description: str) -> tuple[str, str]:
         if pattern.search(text):
             return merchant, category
     # Unknown credit: a merchant name here means money came back from them.
+    originator = ach_originator(text)
+    if originator and originator.upper() in ACH_RULES:
+        return ACH_RULES[originator.upper()][0], INCOME
     for pattern, merchant, category in COMPILED:
         if pattern.search(text.upper()):
             return merchant, REIMBURSEMENT
+    text = strip_ach_tail(text)
     return titlecase(clean(text)) or text, ONEOFF
 
 
@@ -466,11 +534,21 @@ def normalize(description: str, account: str, kind: str) -> tuple[str, str]:
     if hit:
         return hit
 
+    # An ACH entry is identified by its originator id before anything else: the
+    # id is stable where the descriptor text is not.
+    originator = ach_originator(description)
+    if originator and originator.upper() in ACH_RULES:
+        merchant, category = ACH_RULES[originator.upper()]
+        return merchant, (REFUNDS if kind == "credit" else category)
+
     for pattern, merchant, category in COMPILED:
         if pattern.search(raw):
             # A refund keeps its merchant but is not spending in that category.
             return merchant, (REFUNDS if kind == "credit" else category)
 
+    # Fold the volatile ACH reference block away so one payee stays one
+    # merchant across months.
+    description = strip_ach_tail(description)
     name = titlecase(clean(description)) or description.strip()
     if kind == "credit":
         return name, REFUNDS

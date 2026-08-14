@@ -85,6 +85,43 @@ class TestStructuralPatterns(unittest.TestCase):
         self.assertGreater(len(marketing), boa.MAX_CONTINUATION)
 
 
+class TestEnvelope(unittest.TestCase):
+    """BoA wraps the merchant in the channel that produced the transaction."""
+
+    def test_channel_prefix_and_auth_code_are_removed(self):
+        self.assertEqual(
+            boa.strip_envelope(
+                "CHECKCARD 0614 SOME MERCHANT HOUSTON TX 75369436166913405028561"),
+            "SOME MERCHANT HOUSTON TX")
+        self.assertEqual(
+            boa.strip_envelope("MOBILE PURCHASE 0625 A VENDOR TROY MI"),
+            "A VENDOR TROY MI")
+
+    def test_a_brand_survives_the_envelope(self):
+        # The bug this guards: over-stripping left only "Checkcard 0402" and
+        # ate the airline, which is why envelope removal belongs to the parser
+        # rather than the shared cleanup.
+        out = boa.strip_envelope("CHECKCARD 0402 SOMEAIRLINE 8009322732 TX 55432866093201174804045")
+        self.assertIn("SOMEAIRLINE", out)
+
+    def test_doubled_name_keeps_the_fuller_copy(self):
+        self.assertEqual(
+            boa.strip_envelope(
+                "EXAMPLE SHOP 06/22 #000035420 MOBILE PURCHASE EXAMPLE SHOPPE HOUSTON TX"),
+            "EXAMPLE SHOPPE HOUSTON TX")
+
+    def test_doubled_name_keeps_the_brand_when_the_second_copy_is_an_address(self):
+        # "BRAND 05/17 #000002369 MOBILE PURCHASE 7810 SOME FREEWAY" -- taking
+        # the second copy blindly loses the brand and yields a street address.
+        self.assertEqual(
+            boa.strip_envelope("BRAND STORE 05/17 #000002369 MOBILE PURCHASE 7810 SOME FREEWAY HOUSTON"),
+            "BRAND STORE")
+
+    def test_plain_descriptor_is_untouched(self):
+        self.assertEqual(boa.strip_envelope("Zelle payment to A Person Conf# abc123"),
+                         "Zelle payment to A Person Conf# abc123")
+
+
 class TestValidation(unittest.TestCase):
     def make(self, txns, summary):
         from datetime import date

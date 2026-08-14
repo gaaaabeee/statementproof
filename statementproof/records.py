@@ -68,23 +68,33 @@ class Txn:
     source_file: str
     source_line: int
     balance: Optional[float] = None   # checking only: running balance after txn
+    # The merchant portion, with this bank's channel wrapper removed. Only a
+    # parser knows its own envelope, so only a parser can strip it -- a shared
+    # cleanup that tried to handle every bank's wrapper over-stripped some of
+    # them. Empty means "nothing to remove", and the raw description is used.
+    descriptor: str = ""
 
     @property
     def signed(self) -> float:
         return self.amount if self.account == "checking" else -self.amount
 
     @property
+    def match_text(self) -> str:
+        """What the categorizer reads: the unwrapped descriptor if there is one."""
+        return self.descriptor or self.description
+
+    @property
     def merchant(self) -> str:
-        return normalize(self.description, self.account, self.kind)[0]
+        return normalize(self.match_text, self.account, self.kind)[0]
 
     @property
     def category(self) -> str:
-        return normalize(self.description, self.account, self.kind)[1]
+        return normalize(self.match_text, self.account, self.kind)[1]
 
     def as_row(self) -> dict:
         d = asdict(self)
         d["signed"] = round(self.signed, 2)
-        d["merchant"], d["category"] = normalize(self.description, self.account, self.kind)
+        d["merchant"], d["category"] = normalize(self.match_text, self.account, self.kind)
         d["date"] = self.date.isoformat()
         d["statement_close"] = self.statement_close.isoformat()
         d["period_start"] = self.period_start.isoformat()

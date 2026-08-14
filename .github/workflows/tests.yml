@@ -49,7 +49,9 @@ jobs:
       - name: No financial data committed
         run: |
           set -e
-          bad=$(git ls-files | grep -Ei '\.pdf$|(^|/)out/|(^|/)statements/' || true)
+          bad=$(git ls-files | grep -Ei \
+            '\.pdf$|(^|/)out(-[^/]*)?/|statements?/|(^|/)(transactions|by_category)\.csv$|(^|/)dashboard\.html$' \
+            || true)
           if [ -n "$bad" ]; then
             echo "::error::financial data is tracked by git:"; echo "$bad"; exit 1
           fi

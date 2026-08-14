@@ -149,7 +149,7 @@ def spend_rows(stmts: list[Statement]) -> list:
     out = []
     for s in stmts:
         for t in s.txns:
-            _, category = normalize(t.description, t.account, t.kind)
+            _, category = normalize(t.match_text, t.account, t.kind)
             if category in NON_SPEND:
                 continue
             if t.account == "credit" and t.kind in ("purchase", "cash_advance", "fee", "interest"):
@@ -164,7 +164,7 @@ def categorize_report(stmts: list[Statement], show_uncategorized: bool) -> None:
     total = sum(-t.signed for t in rows)
     by_cat = {}
     for t in rows:
-        _, cat = normalize(t.description, t.account, t.kind)
+        _, cat = normalize(t.match_text, t.account, t.kind)
         by_cat[cat] = by_cat.get(cat, 0.0) + -t.signed
 
     print("\nspending by category (excludes transfers, refunds, income)")
@@ -173,7 +173,7 @@ def categorize_report(stmts: list[Statement], show_uncategorized: bool) -> None:
         print(f"  {cat:24} {amt:>12,.2f}  {amt / total * 100:>5.1f}%")
     print(f"  {'TOTAL':24} {total:>12,.2f}")
 
-    unc = [t for t in rows if normalize(t.description, t.account, t.kind)[1] == "uncategorized"]
+    unc = [t for t in rows if normalize(t.match_text, t.account, t.kind)[1] == "uncategorized"]
     unc_amt = sum(-t.signed for t in unc)
     print(
         f"\ncategorized: {(1 - unc_amt / total) * 100:.1f}% of spend "
@@ -184,7 +184,7 @@ def categorize_report(stmts: list[Statement], show_uncategorized: bool) -> None:
     if show_uncategorized and unc:
         merch = {}
         for t in unc:
-            m = normalize(t.description, t.account, t.kind)[0]
+            m = normalize(t.match_text, t.account, t.kind)[0]
             hit = merch.setdefault(m, [0, 0.0])
             hit[0] += 1
             hit[1] += -t.signed
@@ -195,10 +195,10 @@ def categorize_report(stmts: list[Statement], show_uncategorized: bool) -> None:
             print(f"  {amt:>10,.2f}  x{n:<4} {m[:60]}")
 
 
-def write_tables(stmts: list[Statement]) -> None:
-    os.makedirs(OUT, exist_ok=True)
+def write_tables(stmts, out_dir: str = OUT) -> None:
+    os.makedirs(out_dir, exist_ok=True)
 
-    txn_path = os.path.join(OUT, "transactions.csv")
+    txn_path = os.path.join(out_dir, "transactions.csv")
     rows = [t for s in stmts for t in s.txns]
     rows.sort(key=lambda t: (t.date, t.account, t.source_file, t.source_line))
     with open(txn_path, "w", newline="") as fh:
@@ -207,7 +207,7 @@ def write_tables(stmts: list[Statement]) -> None:
         for t in rows:
             w.writerow(t.as_row())
 
-    stmt_path = os.path.join(OUT, "statements.csv")
+    stmt_path = os.path.join(out_dir, "statements.csv")
     keys = sorted({k for s in stmts for k in s.summary})
     with open(stmt_path, "w", newline="") as fh:
         w = csv.writer(fh)
@@ -223,13 +223,13 @@ def write_tables(stmts: list[Statement]) -> None:
     # Month x category spending matrix, ready for a chart.
     spend = spend_rows(stmts)
     months = sorted({t.date.strftime("%Y-%m") for t in spend})
-    cats = sorted({normalize(t.description, t.account, t.kind)[1] for t in spend})
+    cats = sorted({normalize(t.match_text, t.account, t.kind)[1] for t in spend})
     grid = {(m, c): 0.0 for m in months for c in cats}
     for t in spend:
-        key = (t.date.strftime("%Y-%m"), normalize(t.description, t.account, t.kind)[1])
+        key = (t.date.strftime("%Y-%m"), normalize(t.match_text, t.account, t.kind)[1])
         grid[key] += -t.signed
 
-    cat_path = os.path.join(OUT, "by_category.csv")
+    cat_path = os.path.join(out_dir, "by_category.csv")
     with open(cat_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["month"] + cats + ["total"])
@@ -249,6 +249,8 @@ def main(argv=None) -> int:
     ap.add_argument("--force", action="store_true", help="write tables even if checks fail")
     ap.add_argument("--uncategorized", action="store_true",
                     help="list merchants with no category, worst by spend")
+    ap.add_argument("--out", metavar="DIR", default=OUT,
+                    help="where to write the CSVs (default: ./out)")
     ap.add_argument("--folder", metavar="DIR", default=STATEMENTS,
                     help="folder of statement PDFs (searched recursively)")
     args = ap.parse_args(argv)
@@ -298,7 +300,7 @@ def main(argv=None) -> int:
     clean = not failures and not problems and not unparsed
     if not args.report:
         if clean or args.force:
-            write_tables(stmts)
+            write_tables(stmts, args.out)
         else:
             print("\nrefusing to write tables while checks fail (use --force to override)")
 

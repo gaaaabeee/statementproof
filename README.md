@@ -15,7 +15,7 @@ python -m statementproof.run --report         # validate only, write nothing
 python -m statementproof.run --strict         # non-zero exit if anything fails
 python -m statementproof.run --uncategorized  # merchants that need a rule
 python -m statementproof.dashboard            # build out/dashboard.html
-python -m unittest discover -s tests                # 44 tests
+python -m unittest discover -s tests                # 62 tests
 ```
 
 Requires Python 3.9+ and one dependency, `pypdf`.
@@ -163,6 +163,9 @@ Location (first match wins):
   "payees": {
     "ALEX": {"label": "Rent", "category": "Housing"}
   },
+  "ach": {
+    "9876543210": {"merchant": "Rent", "category": "Housing"}
+  },
   "merchants": [
     {"pattern": "ACME CORP PAYROLL", "merchant": "Acme Corp (payroll)", "category": "Income"},
     {"pattern": "CORNER CAFE", "merchant": "Corner Cafe", "category": "Dining & Delivery"}
@@ -172,10 +175,39 @@ Location (first match wins):
 
 `payees` matches the counterparty of a person-to-person payment. `merchants`
 entries are regexes against the raw descriptor and are tried **before** the
-built-in rules, so a local rule always wins. Run `--uncategorized` to see what
+built-in rules, so a local rule always wins.
+
+**`ach` is the one to reach for first** for rent, payroll, insurance and
+utilities. It keys on the ACH originator id — the `CO ID:` or `PPD ID:` printed
+in the descriptor — which stays the same while the surrounding text changes
+every month. On one real account, a single `ach` entry categorized 31.6% of all
+spending, because the landlord's descriptor carried a different reference each
+month and had been fragmenting into six separate "merchants". Run `--uncategorized` to see what
 is worth adding, worst-by-spend first.
 
 **Never commit this file.** It describes your financial relationships.
+
+## Descriptor normalization
+
+Categorization fails far more often because a descriptor was not unwrapped than
+because a merchant is unknown. Measured across two banks and two people, 78% of
+uncategorized spend was a normalization failure, not missing knowledge.
+
+Three layers, in order:
+
+1. **Bank envelope** — removed by the parser, because only a parser knows its
+   own wrapper. BoA prints `CHECKCARD 0614 <merchant> <23-digit reference>`;
+   Chase prints `Card Purchase 05/04 <merchant> Card 1218`. A shared cleanup
+   that tried to handle both over-stripped, reducing one row to `Checkcard 0402`
+   and losing the airline entirely. Parsers set `Txn.descriptor`; an empty
+   value means there was nothing to unwrap.
+2. **ACH tail** — shared, because ACH is a network standard rather than a bank
+   format. See `strip_ach_tail` and the `ach` rules above.
+3. **Processor prefix and location** — shared: `TST*`, `SQ *`, `DD *`, store
+   numbers, phone numbers, URLs, city and state.
+
+Statements also clip merchant names to a fixed width, so the shipped rules match
+truncated forms (`WHOLEFDS`, `VICTORIA'S SECR`, `LUFTHAN`) alongside full ones.
 
 ## How categorization works
 

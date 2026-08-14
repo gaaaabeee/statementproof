@@ -1,9 +1,18 @@
 # Financial data — never commit any of this.
 statements/
+*statements*/
 out/
+out-*/
 *.pdf
 rules.json
 !tests/fixtures/rules.json
+
+# Generated tables, by name, wherever they land. --out accepts any directory,
+# so ignoring a single hardcoded folder is not enough.
+transactions.csv
+statements.csv
+by_category.csv
+dashboard.html
 
 # Environments and build artefacts
 .venv/

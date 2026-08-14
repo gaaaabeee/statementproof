@@ -1,17 +1,20 @@
 """Build a self-contained HTML dashboard from the parsed tables.
 
-    ./.venv/bin/python -m statementproof.dashboard
+    python -m statementproof.dashboard
+    python -m statementproof.dashboard --out out-someone-else
 
-Reads out/transactions.csv + out/statements.csv (run statementproof.run first) and
-writes out/dashboard.html -- one file, no network, no external assets, so the
-financial data never leaves this machine.
+Reads transactions.csv + statements.csv from the output folder (run
+statementproof.run first) and writes dashboard.html beside them -- one file, no
+network, no external assets, so the financial data never leaves this machine.
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import os
+import sys
 import statistics
 from collections import defaultdict
 from datetime import date
@@ -25,10 +28,10 @@ SPEND_CREDIT_KINDS = {"purchase", "cash_advance", "fee", "interest"}
 TOP_CATEGORIES = 7          # + "Other"; the palette has 8 categorical slots
 
 
-def load() -> tuple[list[dict], list[dict]]:
-    with open(os.path.join(OUT, "transactions.csv")) as fh:
+def load(out_dir: str = OUT) -> tuple[list[dict], list[dict]]:
+    with open(os.path.join(out_dir, "transactions.csv")) as fh:
         txns = list(csv.DictReader(fh))
-    with open(os.path.join(OUT, "statements.csv")) as fh:
+    with open(os.path.join(out_dir, "statements.csv")) as fh:
         stmts = list(csv.DictReader(fh))
     for t in txns:
         t["amount"] = float(t["amount"])
@@ -121,8 +124,8 @@ def find_recurring(spend: list[dict], corpus_end: str) -> list[dict]:
     return sorted(found, key=lambda r: (not r["active"], -r["monthly"]))
 
 
-def build_payload() -> dict:
-    txns, stmts = load()
+def build_payload(out_dir: str = OUT) -> dict:
+    txns, stmts = load(out_dir)
     spend = [t for t in txns if is_spend(t)]
 
     months = sorted({t["month"] for t in spend})
@@ -244,10 +247,21 @@ def build_payload() -> dict:
     }
 
 
-def main() -> int:
-    payload = build_payload()
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--out", metavar="DIR", default=OUT,
+                    help="folder holding the CSVs, and where dashboard.html is "
+                         "written (default: ./out)")
+    args = ap.parse_args(argv)
+
+    if not os.path.isdir(args.out):
+        print(f"not a folder: {args.out} -- run statementproof.run first",
+              file=sys.stderr)
+        return 2
+
+    payload = build_payload(args.out)
     html = TEMPLATE.replace("__DATA__", json.dumps(payload, separators=(",", ":")))
-    path = os.path.join(OUT, "dashboard.html")
+    path = os.path.join(args.out, "dashboard.html")
     with open(path, "w") as fh:
         fh.write(html)
     size = os.path.getsize(path) / 1024

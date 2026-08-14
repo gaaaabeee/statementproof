@@ -103,6 +103,46 @@ def classify(amount: float) -> str:
     return "deposit" if amount > 0 else "withdrawal"
 
 
+# --- descriptor envelope ----------------------------------------------------
+# BoA wraps the merchant in the channel that produced the transaction, plus a
+# 23-digit network reference. Stripping that here rather than in the shared
+# categorizer is deliberate: the wrapper is this bank's formatting, and a
+# generic cleanup that tried to handle every bank's wrapper over-stripped --
+# "CHECKCARD 0402 UNITED 8009322732 TX 5543..." collapsed to "Checkcard 0402",
+# eating the airline entirely.
+
+# "VICTORIA'S SEC 06/22 #000035420 MOBILE PURCHASE VICTORIA'S SECR HOUSTON TX"
+# prints the merchant twice, truncated to different widths. Usually the second
+# copy is the fuller one -- but not always: sometimes it is the street address,
+# and taking it blindly loses the brand outright
+# ("IKEA HOUSTON ... 7810 KATY FREEWAY" became "7810 Katy Freeway").
+BOA_DOUBLED = re.compile(
+    r"^(?P<first>.{2,}?)\s+\d{2}/\d{2}\s+(?:#\d+\s+)?"
+    r"(?:MOBILE\s+|RECURRING\s+)?(?:PURCHASE|WITHDRWL|WITHDRAWAL|REFUND|DEPOSIT)\s+"
+    r"(?P<second>\S.*)$",
+    re.I,
+)
+# A leading street number means the second copy is an address, not a name.
+BOA_STREET = re.compile(r"^\d{2,6}\s+\S")
+BOA_CHANNEL = re.compile(
+    r"^(?:RECURRING\s+)?(?:CHECKCARD|CHECK CARD|PURCHASE|MOBILE PURCHASE|"
+    r"ATM WITHDRAWAL|ATM CASH WITHDRAWAL|WITHDRWL|PRE-AUTH|POS)\s+\d{4}\s+",
+    re.I,
+)
+BOA_AUTH = re.compile(r"\s+\d{15,}\s*$")
+
+
+def strip_envelope(text: str) -> str:
+    """Remove BoA's channel wrapper, leaving the merchant portion."""
+    hit = BOA_DOUBLED.match(text)
+    if hit:
+        first, second = hit.group("first").strip(), hit.group("second").strip()
+        text = first if BOA_STREET.match(second) else second
+    text = BOA_CHANNEL.sub("", text)
+    text = BOA_AUTH.sub("", text)
+    return text.strip()
+
+
 def parse(path: str) -> Statement:
     pages = layout_pages(path)
     flat = [(n, ln) for n, page in enumerate(pages) for ln in page if ln]
@@ -199,12 +239,16 @@ def parse(path: str) -> Statement:
             continue
 
         # A short orphan line inside a section is the tail of the description
-        # above it, which wrapped after its amount ("...CO ID:1752788861" / "WEB").
+        # above it, which wrapped after its amount ("...CO ID:9876543210" / "WEB").
         if last_txn is not None and len(line) <= MAX_CONTINUATION:
             last_txn.description = f"{last_txn.description} {line}".strip()
             continue
 
         stmt.unparsed.append((lineno, line))
+
+    # Set after the loop so wrapped continuations are already appended.
+    for t in stmt.txns:
+        t.descriptor = strip_envelope(t.description)
 
     _validate(stmt)
     return stmt
